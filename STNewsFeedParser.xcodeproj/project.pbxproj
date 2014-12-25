@@ -10,6 +10,10 @@
 		792613F01A4C659300FB5BBE /* STNewsFeedParser.h in Headers */ = {isa = PBXBuildFile; fileRef = 792613EF1A4C659300FB5BBE /* STNewsFeedParser.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		792613F61A4C659300FB5BBE /* STNewsFeedParser.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 792613EA1A4C659300FB5BBE /* STNewsFeedParser.framework */; };
 		792613FD1A4C659300FB5BBE /* STNewsFeedParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792613FC1A4C659300FB5BBE /* STNewsFeedParserTests.swift */; };
+		792614081A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */; };
+		792614091A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */; };
+		7926140A1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */; };
+		7926140B1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +33,8 @@
 		792613F51A4C659300FB5BBE /* STNewsFeedParserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = STNewsFeedParserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		792613FB1A4C659300FB5BBE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		792613FC1A4C659300FB5BBE /* STNewsFeedParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STNewsFeedParserTests.swift; sourceTree = "<group>"; };
+		792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = STNewsFeedEntry.swift; path = ../STNewsFeedEntry.swift; sourceTree = "<group>"; };
+		792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STNewsFeedParser.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +77,8 @@
 		792613EC1A4C659300FB5BBE /* STNewsFeedParser */ = {
 			isa = PBXGroup;
 			children = (
+				792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */,
+				792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */,
 				792613EF1A4C659300FB5BBE /* STNewsFeedParser.h */,
 				792613ED1A4C659300FB5BBE /* Supporting Files */,
 			);
@@ -209,6 +217,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7926140A1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */,
+				792614081A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,7 +226,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				792614091A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */,
 				792613FD1A4C659300FB5BBE /* STNewsFeedParserTests.swift in Sources */,
+				7926140B1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
