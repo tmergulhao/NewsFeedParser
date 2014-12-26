@@ -95,14 +95,24 @@ Enumeration of types of XML feeds supported
 - RSS:  Documentation on http://en.wikipedia.org/wiki/RSS
 - ATOM: Documentation on http://en.wikipedia.org/wiki/Atom_(standard)
 */
-internal enum FeedType {
+public enum FeedType {
     case NONE, RSS, ATOM
+    var verbose : String {
+        switch self {
+        case .NONE:
+            return "NONE"
+        case .RSS:
+            return "RSS"
+        case .ATOM:
+            return "ATOM"
+        }
+    }
 }
 /**
 Collective type of information about feed. Contains all properties and functionality of NewsFeedEntry as it inherits directly from it. Does not need a information to initialize, through.
 */
 public class STNewsFeedInfo : STNewsFeedEntry {
-    internal var sourceType : FeedType = FeedType.NONE
+    public var sourceType : FeedType = FeedType.NONE
     internal init () {
         super.init(feed: nil)
         
