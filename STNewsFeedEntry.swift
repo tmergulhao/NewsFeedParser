@@ -20,6 +20,56 @@
 
 import Foundation
 
+// MARK - Regular Expression
+
+infix operator =~ {}
+
+func =~ (value : String, pattern : String) -> RegexMatchResult {
+    let nsstr = value as NSString // we use this to access the NSString methods like .length and .substringWithRange(NSRange)
+    
+    var err : NSError?
+    let options = NSRegularExpressionOptions(0)
+    let re = NSRegularExpression(pattern: pattern, options: options, error: &err)
+    if let e = err {
+        return RegexMatchResult(items: [])
+    }
+    
+    let all = NSRange(location: 0, length: nsstr.length)
+    let moptions = NSMatchingOptions(0)
+    var matches : Array<String> = []
+    re!.enumerateMatchesInString(value, options: moptions, range: all) {
+        (result : NSTextCheckingResult!, flags : NSMatchingFlags, ptr : UnsafeMutablePointer<ObjCBool>) in
+        let string = nsstr.substringWithRange(result.range)
+        matches.append(string)
+    }
+    return RegexMatchResult(items: matches)
+}
+
+struct RegexMatchCaptureGenerator : GeneratorType {
+    mutating func next() -> String? {
+        if items.isEmpty { return nil }
+        let ret = items[0]
+        items = items[1..<items.count]
+        return ret
+    }
+    var items: Slice<String>
+}
+
+struct RegexMatchResult : SequenceType, BooleanType {
+    var items: Array<String>
+    func generate() -> RegexMatchCaptureGenerator {
+        return RegexMatchCaptureGenerator(items: items[0..<items.count])
+    }
+    var boolValue: Bool {
+        return items.count > 0
+    }
+    subscript (i: Int) -> String {
+        return items[i]
+    }
+}
+
+// MARK - Dictionary Extension
+
 private extension Dictionary {
     /**
     Return first match for given key on keys or nil
@@ -71,6 +121,15 @@ public class STNewsFeedEntry: NSObject {
     public var summary : String? {
         return properties.findAny("subtitle", "description", "summary")
     }
+    public var domain : String? {
+        var result = address =~ "^(https?://[A-Za-z0-9.-]+\\.[A-Za-z]{2,4})"
+        
+        if result.boolValue {
+            return result.items[0]
+        }
+        
+        return nil
+    }
     
     // MARK: - Internal
     internal var properties : [String : String] = Dictionary<String, String>()
@@ -83,7 +142,7 @@ public class STNewsFeedEntry: NSObject {
             if title == nil {return false}
         }
         if address == nil {
-            address = properties.findAny("link", "url")
+            address = properties.findAny("link", "url", "address")
             if address == nil {return false}
         }
         
