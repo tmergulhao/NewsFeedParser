@@ -44,19 +44,14 @@ public enum STNewsFeedError : Int {
     optional func newsFeed(feed : STNewsFeedParser, unknownElement elementName:String, withAttributes attributeDict:NSDictionary, andError error: NSError)
 }
 
-// MARK: - STNewsFeed
-
-// TODO: Feed discovery class
-
+// MARK: - STNewsFeedParser
 
 public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     // MARK: - Public
     public weak var delegate : STNewsFeedParserDelegate?
     
-    public var info : STNewsFeedInfo!
+    public var info : STNewsFeedEntry!
     public var entries : Array<STNewsFeedEntry> = []
-    
-    private var url : NSURL!
     
     public var lastUpdated : NSDate?
     
@@ -69,9 +64,10 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         
         url = address
         
-        info = STNewsFeedInfo()
+        info = STNewsFeedEntry()
+        info.info = info
         
-        info.properties["address"] = address.absoluteString
+        info.properties["link"] = address.absoluteString
         
         target = info
     }
@@ -90,14 +86,17 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             
             parser.delegate = self
             
-            dispatch_async (Dispatch.secondaryQueue, {
-                parser.parse()
-                
-                parser.description
-            })
+            parser.parse()
+            
+//            dispatch_async (Dispatch.secondaryQueue, {
+//                parser.parse()
+//                
+//                getchar()
+//            })
         } else {
             let errorCode = STNewsFeedError.Address
-            let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo: ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + url.absoluteString! + "]"])
+            let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + url.absoluteString! + "]"])
             
             delegate?.newsFeed?(self, corruptFeed: parseError)
         }
@@ -107,10 +106,12 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     }
     
     // MARK: - Private, NSXMLParserDelegate
+    
     private enum ParseMode {
         case FEED, ENTRY
     }
     
+    private var url : NSURL!
     private weak var parser : NSXMLParser!
     
     private var target : STNewsFeedEntry!
@@ -125,7 +126,27 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         currentContent = ""
         
         switch info.sourceType {
-        case FeedType.ATOM, FeedType.RSS:
+        case FeedType.NONE:
+            switch elementName {
+            case "feed":
+                info.sourceType = FeedType.ATOM
+            case "channel", "rss":
+                if let isPodcast = attributeDict["xmlns:itunes"] as? String {
+                    info.sourceType = FeedType.PODCAST
+                } else {
+                    info.sourceType = FeedType.RSS
+                }
+            default:
+                abortParsing()
+                
+                let errorCode = STNewsFeedError.CorruptFeed
+                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                    ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
+                
+                delegate?.newsFeed?(self, corruptFeed: parseError)
+            }
+        
+        case .ATOM, .RSS, .PODCAST:
             switch elementName {
             case "title", "subtitle", "id", "rights":
                 // Not needed in the parsing fase
@@ -147,34 +168,24 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                         abortParsing()
                         
                         let errorCode = STNewsFeedError.CorruptFeed
-                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo: ["description" : "CORRUPT FEED [\(url.absoluteString)]"])
+                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                            ["description" : "CORRUPT FEED [\(url.absoluteString)]"])
                         
                         delegate?.newsFeed?(self, corruptFeed: parseError)
                     }
                 }
                 
                 parseMode = ParseMode.ENTRY
-                target = STNewsFeedEntry(feed: info)
+                target = info.sourceType.entry(info)
+                
             case "link", "url":
                 target.properties["link"] = attributeDict.valueForKey("href") as? String
             default:
                 let errorCode = STNewsFeedError.Element
-                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo: ["description" : "UNKNOWN ELEMENT [\(elementName)]\nATTRIBUTES: [\(attributeDict)]"])
+                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                    ["description" : "UNKNOWN ELEMENT [\(elementName)]\nATTRIBUTES: [\(attributeDict)]"])
+                
                 delegate?.newsFeed?(self, unknownElement: elementName, withAttributes: attributeDict, andError: parseError)
-            }
-        default:
-            switch elementName {
-            case "feed":
-                info.sourceType = FeedType.ATOM
-            case "channel", "rss":
-                info.sourceType = FeedType.RSS
-            default:
-                abortParsing()
-                
-                let errorCode = STNewsFeedError.CorruptFeed
-                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo: ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
-                
-                delegate?.newsFeed?(self, corruptFeed: parseError)
             }
         }
     }
@@ -184,8 +195,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         currentContent = currentContent.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
         
         switch info.sourceType {
-        case FeedType.ATOM, FeedType.RSS:
+        case .NONE:
+            break
+            
+        case .ATOM, .RSS, .PODCAST:
             switch elementName {
+                
+                
             case "entry", "item":
                 switch parseMode {
                 case .ENTRY:
@@ -203,7 +219,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                         }
                     } else {
                         let errorCode = STNewsFeedError.CorruptFeed
-                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo: ["description" : "CORRUPT POST [\(url.absoluteString)]\nPOST \(target.properties)"])
+                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                            ["description" : "CORRUPT POST [\(url.absoluteString)]"/*\nPOST \(target.properties)"*/])
                         
                         delegate?.newsFeed?(self, corruptFeed: parseError)
                     }
@@ -211,20 +228,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                     break
                 }
             default:
-                if currentContent != "" {
-                    switch parseMode {
-                    case .ENTRY:
-                        target.properties[elementName] = currentContent
-                    case .FEED:
-                        info.properties[elementName] = currentContent
-                    }
+                if !currentContent.isEmpty {
+                    target.properties[elementName] = currentContent
                 }
             }
-        default:
-            break
         }
     }
-    
+
     public func parser(parser: NSXMLParser!, foundCharacters string: String!) {
         currentContent += string
     }
