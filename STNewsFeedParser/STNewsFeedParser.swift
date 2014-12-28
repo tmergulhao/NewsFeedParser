@@ -20,11 +20,11 @@
 
 import Foundation
 
-// MARK: - STNewsFeedError
-public enum STNewsFeedError : Int {
+// MARK: - STNewsFeedParserError
+public enum STNewsFeedParserError : Int {
     case Element, Address, CorruptFeed
     var domain : String {
-        return "stae.rs.STNewsFeed"
+        return "stae.rs.STNewsFeedParser"
     }
 }
 
@@ -94,7 +94,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 //                getchar()
 //            })
         } else {
-            let errorCode = STNewsFeedError.Address
+            let errorCode = STNewsFeedParserError.Address
             let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                 ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + url.absoluteString! + "]"])
             
@@ -139,7 +139,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             default:
                 abortParsing()
                 
-                let errorCode = STNewsFeedError.CorruptFeed
+                let errorCode = STNewsFeedParserError.CorruptFeed
                 let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
                 
@@ -167,7 +167,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                     } else {
                         abortParsing()
                         
-                        let errorCode = STNewsFeedError.CorruptFeed
+                        let errorCode = STNewsFeedParserError.CorruptFeed
                         let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                             ["description" : "CORRUPT FEED [\(url.absoluteString)]"])
                         
@@ -181,7 +181,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             case "link", "url":
                 target.properties["link"] = attributeDict.valueForKey("href") as? String
             default:
-                let errorCode = STNewsFeedError.Element
+                let errorCode = STNewsFeedParserError.Element
                 let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "UNKNOWN ELEMENT [\(elementName)]\nATTRIBUTES: [\(attributeDict)]"])
                 
@@ -218,7 +218,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                             entries.append(target)
                         }
                     } else {
-                        let errorCode = STNewsFeedError.CorruptFeed
+                        let errorCode = STNewsFeedParserError.CorruptFeed
                         let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                             ["description" : "CORRUPT POST [\(url.absoluteString)]"/*\nPOST \(target.properties)"*/])
                         
