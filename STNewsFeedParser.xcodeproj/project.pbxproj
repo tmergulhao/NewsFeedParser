@@ -7,13 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7924C2901A4D2DB70022273E /* STNewsFeedDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C28F1A4D2DB70022273E /* STNewsFeedDiscovery.swift */; };
+		7924C2911A4D2DB70022273E /* STNewsFeedDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C28F1A4D2DB70022273E /* STNewsFeedDiscovery.swift */; };
+		7924C2991A4D2DF40022273E /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C2971A4D2DF40022273E /* STNewsFeedEntry.swift */; };
+		7924C29A1A4D2DF40022273E /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C2971A4D2DF40022273E /* STNewsFeedEntry.swift */; };
+		7924C29B1A4D2DF40022273E /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C2981A4D2DF40022273E /* STNewsFeedParser.swift */; };
+		7924C29C1A4D2DF40022273E /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C2981A4D2DF40022273E /* STNewsFeedParser.swift */; };
+		7924C29F1A4DBC120022273E /* STTestHTMLFeedDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7924C29D1A4DBC120022273E /* STTestHTMLFeedDiscovery.swift */; };
 		792613F01A4C659300FB5BBE /* STNewsFeedParser.h in Headers */ = {isa = PBXBuildFile; fileRef = 792613EF1A4C659300FB5BBE /* STNewsFeedParser.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		792613F61A4C659300FB5BBE /* STNewsFeedParser.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 792613EA1A4C659300FB5BBE /* STNewsFeedParser.framework */; };
 		792613FD1A4C659300FB5BBE /* STNewsFeedParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792613FC1A4C659300FB5BBE /* STNewsFeedParserTests.swift */; };
-		792614081A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */; };
-		792614091A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */; };
-		7926140A1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */; };
-		7926140B1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */; };
+		79855D2E1A4DDBD500170369 /* RegExOperator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79855D2D1A4DDBD500170369 /* RegExOperator.swift */; };
+		79855D2F1A4DDBD500170369 /* RegExOperator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79855D2D1A4DDBD500170369 /* RegExOperator.swift */; };
+		79855D311A4DDC3800170369 /* DictionaryFindAnyExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79855D301A4DDC3800170369 /* DictionaryFindAnyExtension.swift */; };
+		79855D321A4DDC3800170369 /* DictionaryFindAnyExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79855D301A4DDC3800170369 /* DictionaryFindAnyExtension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,14 +34,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7924C28F1A4D2DB70022273E /* STNewsFeedDiscovery.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STNewsFeedDiscovery.swift; sourceTree = "<group>"; };
+		7924C2971A4D2DF40022273E /* STNewsFeedEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STNewsFeedEntry.swift; sourceTree = "<group>"; };
+		7924C2981A4D2DF40022273E /* STNewsFeedParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STNewsFeedParser.swift; sourceTree = "<group>"; };
+		7924C29D1A4DBC120022273E /* STTestHTMLFeedDiscovery.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STTestHTMLFeedDiscovery.swift; sourceTree = "<group>"; };
 		792613EA1A4C659300FB5BBE /* STNewsFeedParser.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = STNewsFeedParser.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		792613EE1A4C659300FB5BBE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		792613EF1A4C659300FB5BBE /* STNewsFeedParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = STNewsFeedParser.h; sourceTree = "<group>"; };
 		792613F51A4C659300FB5BBE /* STNewsFeedParserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = STNewsFeedParserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		792613FB1A4C659300FB5BBE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		792613FC1A4C659300FB5BBE /* STNewsFeedParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STNewsFeedParserTests.swift; sourceTree = "<group>"; };
-		792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = STNewsFeedEntry.swift; path = ../STNewsFeedEntry.swift; sourceTree = "<group>"; };
-		792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = STNewsFeedParser.swift; sourceTree = SOURCE_ROOT; };
+		79855D2D1A4DDBD500170369 /* RegExOperator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RegExOperator.swift; sourceTree = "<group>"; };
+		79855D301A4DDC3800170369 /* DictionaryFindAnyExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DictionaryFindAnyExtension.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,8 +88,11 @@
 		792613EC1A4C659300FB5BBE /* STNewsFeedParser */ = {
 			isa = PBXGroup;
 			children = (
-				792614061A4C65C000FB5BBE /* STNewsFeedEntry.swift */,
-				792614071A4C65C000FB5BBE /* STNewsFeedParser.swift */,
+				79855D2D1A4DDBD500170369 /* RegExOperator.swift */,
+				79855D301A4DDC3800170369 /* DictionaryFindAnyExtension.swift */,
+				7924C2971A4D2DF40022273E /* STNewsFeedEntry.swift */,
+				7924C2981A4D2DF40022273E /* STNewsFeedParser.swift */,
+				7924C28F1A4D2DB70022273E /* STNewsFeedDiscovery.swift */,
 				792613EF1A4C659300FB5BBE /* STNewsFeedParser.h */,
 				792613ED1A4C659300FB5BBE /* Supporting Files */,
 			);
@@ -97,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				792613FC1A4C659300FB5BBE /* STNewsFeedParserTests.swift */,
+				7924C29D1A4DBC120022273E /* STTestHTMLFeedDiscovery.swift */,
 				792613FA1A4C659300FB5BBE /* Supporting Files */,
 			);
 			path = STNewsFeedParserTests;
@@ -217,8 +232,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7926140A1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */,
-				792614081A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */,
+				7924C2991A4D2DF40022273E /* STNewsFeedEntry.swift in Sources */,
+				79855D2E1A4DDBD500170369 /* RegExOperator.swift in Sources */,
+				79855D311A4DDC3800170369 /* DictionaryFindAnyExtension.swift in Sources */,
+				7924C2901A4D2DB70022273E /* STNewsFeedDiscovery.swift in Sources */,
+				7924C29B1A4D2DF40022273E /* STNewsFeedParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,9 +244,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				792614091A4C65C000FB5BBE /* STNewsFeedEntry.swift in Sources */,
+				7924C29F1A4DBC120022273E /* STTestHTMLFeedDiscovery.swift in Sources */,
+				7924C2911A4D2DB70022273E /* STNewsFeedDiscovery.swift in Sources */,
 				792613FD1A4C659300FB5BBE /* STNewsFeedParserTests.swift in Sources */,
-				7926140B1A4C65C000FB5BBE /* STNewsFeedParser.swift in Sources */,
+				79855D2F1A4DDBD500170369 /* RegExOperator.swift in Sources */,
+				7924C29C1A4D2DF40022273E /* STNewsFeedParser.swift in Sources */,
+				79855D321A4DDC3800170369 /* DictionaryFindAnyExtension.swift in Sources */,
+				7924C29A1A4D2DF40022273E /* STNewsFeedEntry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -407,6 +429,7 @@
 				792614021A4C659300FB5BBE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		792614031A4C659300FB5BBE /* Build configuration list for PBXNativeTarget "STNewsFeedParserTests" */ = {
 			isa = XCConfigurationList;
@@ -415,6 +438,7 @@
 				792614051A4C659300FB5BBE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
