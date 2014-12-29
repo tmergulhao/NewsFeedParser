@@ -103,7 +103,7 @@ public class STNewsFeedEntry: NSObject {
     // MARK: - Lazy contextual optional variables
     public lazy var summary : String? = self.properties.findAny("subtitle", "description", "summary")
     public lazy var subtitle : String? = self.summary
-    public lazy var domain : String? = (self.link =~ "^(https?://[A-Za-z0-9.-]+\\.[A-Za-z]{2,4})").items.first
+    public lazy var domain : String? = (self.link + "/" =~ "^https?://(?:www\\.)?([A-Za-z0-9-]+\\.[A-Za-z0-9]+)").items.last
     
     // MARK: - Internal
     public var sourceType : FeedType = FeedType.NONE
