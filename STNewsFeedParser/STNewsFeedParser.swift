@@ -56,7 +56,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     public var lastUpdated : NSDate?
     
     struct Dispatch {
-        private static var secondaryQueue : dispatch_queue_t!
+        private static var parallel : dispatch_queue_t!
+        private static var serial : dispatch_queue_t!
     }
     
     public init (feedFromUrl address : NSURL) {
@@ -70,39 +71,42 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         info.properties["link"] = address.absoluteString
         
         target = info
+        
+        if Dispatch.parallel == nil {
+            Dispatch.parallel = dispatch_queue_create("stae.rs.STNewsFeedParser.parallel", nil)
+        }
+        if Dispatch.serial == nil {
+            Dispatch.serial = dispatch_queue_create("stae.rs.STNewsFeedParser.serial", DISPATCH_QUEUE_SERIAL)
+        }
     }
     public func parse () {
-        if Dispatch.secondaryQueue == nil {
-            Dispatch.secondaryQueue = dispatch_queue_create("stae.rs.STNewsFeed ", DISPATCH_QUEUE_SERIAL)
-        }
         
         entries.removeAll(keepCapacity: true)
         info.sourceType = FeedType.NONE
         
         parseMode = .FEED
         
-        if let parser = NSXMLParser(contentsOfURL: url) {
+        dispatch_async (Dispatch.parallel, {
+        
+        if let parser = NSXMLParser(contentsOfURL: self.url) {
             self.parser = parser
             
             parser.delegate = self
-            
             parser.parse()
-            
-//            dispatch_async (Dispatch.secondaryQueue, {
-//                parser.parse()
-//                
-//                getchar()
-//            })
         } else {
             let errorCode = STNewsFeedParserError.Address
             let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + url.absoluteString! + "]"])
+                ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
             
-            delegate?.newsFeed?(self, corruptFeed: parseError)
+            self.delegate?.newsFeed?(self, corruptFeed: parseError)
         }
+            
+        })
     }
     public func abortParsing () {
-        parser.abortParsing()
+        parser?.abortParsing()
+        parser?.delegate = nil
+        parser = nil
     }
     
     // MARK: - Private, NSXMLParserDelegate
@@ -113,6 +117,9 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     
     private var url : NSURL!
     private weak var parser : NSXMLParser!
+    public var isParsing : Bool {
+        return parser == nil ? false : true
+    }
     
     private var target : STNewsFeedEntry!
     
@@ -160,6 +167,11 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                                 break
                             case .OrderedSame, .OrderedDescending:
                                 abortParsing()
+                                dispatch_async (Dispatch.serial, {
+                                if true {
+                                    self.delegate?.didFinishFeedParsing(self)
+                                }
+                                })
                             }
                         }
                         
@@ -246,9 +258,14 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     public func parserDidEndDocument(parser: NSXMLParser!) {
         lastUpdated = info.date
         
-        self.parser.delegate = nil
-        self.parser = nil
+        abortParsing()
         
-        delegate?.didFinishFeedParsing(self)
+        dispatch_async (Dispatch.serial, {
+            
+        if true {
+            self.delegate?.didFinishFeedParsing(self)
+        }
+            
+        })
     }
 }
