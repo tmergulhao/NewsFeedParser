@@ -84,9 +84,17 @@ public class STNewsFeedEntry: NSObject {
     public lazy var title : String! = self.properties.findAny("title", "subtitle", "description", "summary", "url", "link")
     public lazy var link : String! = self.properties.findAny("link", "url", "address")
     public lazy var date : NSDate! = self.parseDate()
-    
-    internal lazy var normalized : Bool = self.normalize()
-    
+    // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"THE RSS URL"]];
+	internal lazy var normalized : Bool = {
+		if self.title == nil { return false }
+		if self.link == nil { return false }
+		if self.date == nil { return false }
+		
+		if self.info == nil { return false }
+		
+		return true
+	}()
+	
     // MARK: - Lazy contextual optional variables
     public lazy var summary : String? = self.properties.findAny("subtitle", "description", "summary")
     public lazy var subtitle : String? = self.summary
@@ -96,17 +104,7 @@ public class STNewsFeedEntry: NSObject {
     public var sourceType : FeedType = FeedType.NONE
     public weak var info : STNewsFeedEntry!
     internal var properties : [String : String] = Dictionary<String, String>()
-    
-    internal func normalize () -> Bool {
-        if title == nil { return false }
-        if link == nil { return false }
-        if date == nil { return false }
-        
-        if info == nil {return false}
-        
-        return true
-    }
-    
+	
     /**
     Method for parsing datetime of given date encoding.
     Supports partially RFC822 and RFC3339
@@ -116,11 +114,9 @@ public class STNewsFeedEntry: NSObject {
     private func parseDate() -> NSDate? {
         
         if let dateString = properties.findAny(
-            
             // RSS standart tags
             "pubDate", "lastBuildDate",
             "dc:date", // A List Apart requirement
-            
             // Atom standart tags
             "updated", "published"
             ) {
