@@ -31,7 +31,7 @@ Enumeration of types of XML feeds supported
 - PODCAST: Documentation on https://www.apple.com/itunes/podcasts/specs.html
 */
 public enum FeedType {
-    case NONE, RSS, ATOM, PODCAST
+    case NONE, RSS, ATOM
     /// Verbose description of types
     var verbose : String {
         switch self {
@@ -39,8 +39,6 @@ public enum FeedType {
             return ""
         case .RSS:
             return "RSS"
-        case .PODCAST:
-            return "Podcast"
         case .ATOM:
             return "Atom"
         }
@@ -58,8 +56,6 @@ public enum FeedType {
             return nil
         case .RSS:
             return STRSSEntry(info: info)
-        case .PODCAST:
-            return STPodcastEntry(info: info)
         case .ATOM:
             return STAtomEntry(info: info)
         }
@@ -71,15 +67,6 @@ public enum FeedType {
 RSS entry type with according methods and properties
 */
 public class STRSSEntry : STNewsFeedEntry {}
-
-// MARK: - STPodcastEntry
-/**
-Apple Podcast XML entry type according methods and properties
-Documentation on https://www.apple.com/itunes/podcasts/specs.html
-*/
-public class STPodcastEntry : STNewsFeedEntry {
-    // public lazy var audio : String! = self.properties.findAny("guid")
-}
 
 // MARK: - STAtomEntry
 /**

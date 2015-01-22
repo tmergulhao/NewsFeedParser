@@ -174,16 +174,12 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         currentContent = ""
         
         switch info.sourceType {
-        case FeedType.NONE:
+        case .NONE:
             switch elementName {
             case "feed":
                 info.sourceType = FeedType.ATOM
             case "channel", "rss":
-                if let isPodcast = attributeDict["xmlns:itunes"] as? String {
-                    info.sourceType = FeedType.PODCAST
-                } else {
-                    info.sourceType = FeedType.RSS
-                }
+                info.sourceType = FeedType.RSS
             default:
                 let errorCode = STNewsFeedParserError.CorruptFeed
                 criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
@@ -193,8 +189,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				
 				abortParsing()
             }
-        
-        case .ATOM, .RSS, .PODCAST:
+			
+        case .ATOM, .RSS:
             switch elementName {
             case "title", "subtitle", "id", "rights":
                 // Not needed in the parsing fase
@@ -251,7 +247,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         case .NONE:
             break
             
-        case .ATOM, .RSS, .PODCAST:
+        case .ATOM, .RSS:
             switch elementName {
                 
                 
