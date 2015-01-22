@@ -6,91 +6,50 @@
 //  Copyright (c) 2014 Tiago Mergulhão. All rights reserved.
 //
 
-import UIKit
 import XCTest
 
-class STNewsFeedParserTests: XCTestCase, STNewsFeedParserDelegate {
-    
-    var parsers : Dictionary<String, STNewsFeedParser> = [:]
-    
-    var verbose : Bool = false
-    
-    func willBeginFeedParsing(feed : STNewsFeedParser) {
-        println()
-        println("\(feed.info.properties)")
-        println()
-        feed.abortParsing()
-    }
-    func didFinishFeedParsing(feed : STNewsFeedParser) {}
-    func newsFeed(feed : STNewsFeedParser, XMLParserError error:NSError) {}
-    func newsFeed(feed : STNewsFeedParser, corruptFeed error:NSError) {}
-    func newsFeed(feed : STNewsFeedParser, unknownElement elementName:String, withAttributes attributeDict:NSDictionary, andError error: NSError) {}
-    
-    override func setUp() {
-        super.setUp()
-        
-        var feeds = [
-            "http://daringfireball.net/feeds/main",
-            "http://feeds.gawker.com/lifehacker/full",
-            "http://www.swiss-miss.com/feed",
-            "http://nautil.us/rss/all",
-            "http://feeds.feedburner.com/zenhabits",
-            "http://feeds.feedburner.com/codinghorror",
-            "http://red-glasses.com/index.php/feed/",
-            "http://bldgblog.blogspot.com/feeds/posts/default?alt=rss",
-            "http://alistapart.com/site/rss"]
-        
-        for address in feeds {
-            if let url = NSURL(string: address) {
-                var feed = STNewsFeedParser(feedFromUrl: url)
-                
-                parsers[address] = feed
-            }
-        }
-    }
-    
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-        
-        parsers.removeAll(keepCapacity: false)
-    }
-    
-    func testFetchNewEntriesVerbose() {
-        verbose = true
-        
-        for parser in self.parsers.values {
-            parser.delegate = self
-            
-            let calendar = NSCalendar.currentCalendar()
-            let yesterday = calendar.dateByAddingUnit(.CalendarUnitDay, value: -1, toDate: NSDate(), options: nil)
-            
-            parser.lastUpdated = yesterday
-            
-            parser.parse()
-        }
-        
-        // XCTAssert(true, "Pass")
-    }
-    
-    func testA () {
-        for parser in self.parsers.values {
-            
-            parser.delegate = self
-            
-            parser.parse()
-        }
-    }
-    
-    func testMeasureDispatchParsing () {
-        self.measureBlock() {
-            for parser in self.parsers.values {
-                
-                parser.delegate = self
-                
-                parser.parse()
-            }
-        }
-    }
-    
+//	TODO: Instrumentalize tests
+//	http://www.raywenderlich.com/23037/how-to-use-instruments-in-xcode
+
+/**
+	Asynchronous test suite made based on XCTest library
+	Explanatory articles on the technique used on:
+*	http://nshipster.com/xctestcase/
+*	http://blog.dadabeatnik.com/2014/07/13/asynchronous-unit-testing-in-xcode-6/
+*	http://www.objc.io/issue-15/xctest.html
+*/
+
+internal class STNewsFeedParserTests : XCTestCase {
+	
+	var expectations : Dictionary<String, XCTestExpectation> = [String : XCTestExpectation]()
+	
+	var sampleAddresses = [
+		"http://daringfireball.net/feeds/main",
+		"http://www.swiss-miss.com/feed",
+		"http://nautil.us/rss/all",
+		"http://feeds.feedburner.com/zenhabits",
+		"http://feeds.feedburner.com/codinghorror",
+		"http://red-glasses.com/index.php/feed/",
+		"http://bldgblog.blogspot.com/feeds/posts/default?alt=rss",
+		"http://alistapart.com/site/rss"
+	]
+	
+	override func setUp() {
+		for address in sampleAddresses {
+			if let someURL = NSURL(string: address) {
+				feeds.append(STNewsFeedParser(
+					    feedFromUrl: someURL,
+					concurrencyType: STNewsFeedParserConcurrencyType.PrivateQueue))
+				
+				expectations[address] = expectationWithDescription("Parsed \(address)")
+			} else {
+				XCTAssert(false, "Unable to instance NSURL : \(address)")
+			}
+		}
+	}
+	
+	// MARK: - STNewsFeedParser
+	
+	var feeds = [STNewsFeedParser]()
+	var feed : STNewsFeedParser?
 }
