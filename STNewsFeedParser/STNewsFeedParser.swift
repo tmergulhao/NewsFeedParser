@@ -218,9 +218,27 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			
         case .ATOM, .RSS:
             switch elementName {
-            case "title", "subtitle", "id", "rights":
-                // Not needed in the parsing fase
-                break
+			
+			// DATA ELEMENTS
+			case "title", "subtitle", "id", "description", "guid", "summary": break
+				
+			// DATETIME
+			case "updated", "lastBuildDate", "pubDate", "published": break
+				
+			// UNSUPPORTED
+			case "channel", "generator", "language", "rights", "comments", "category", "content:encoded", "name", "author", "content", "media:thumbnail", "uri": break
+			
+			// VENDOR UNSUPPORTED
+			case "slash:comments", "wfw:commentRss", "ttl", "xhtml:meta", "managingEditor", "openSearch:totalResults", "openSearch:startIndex", "openSearch:itemsPerPage", "thr:total",
+			// SY
+				"sy:updateFrequency", "sy:updateFrequency","sy:updatePeriod", "sy:updateFrequency",
+			// ATOM
+				"atom:link", "atom:updated", "atom10:link", "atom:id",
+			// DC
+				"dc:language", "dc:rights", "dc:subject", "dc:date", "dc:creator",
+			// FEEDBURNER
+				"feedburner:info", "feedburner:info", "feedburner:feedburnerHostname", "feedburner:feedFlare", "feedburner:info", "feedburner:info", "feedburner:emailServiceId", "feedburner:origLink"
+				: break
             case "entry", "item":
                 if parseMode == .FEED {
                     if info.normalized {
