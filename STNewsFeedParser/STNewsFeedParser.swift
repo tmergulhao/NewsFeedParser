@@ -21,11 +21,16 @@
 import Foundation
 
 // MARK: - STNewsFeedParserError
+
 public enum STNewsFeedParserError : Int {
-    case Element, Address, CorruptFeed
+    case Element, Address, CorruptFeed, DispatchError
     var domain : String {
         return "stae.rs.STNewsFeedParser"
     }
+}
+
+public enum STNewsFeedParserConcurrencyType : Int {
+	case MainQueue, PrivateQueue, CustomQueue
 }
 
 // MARK: - STNewsFeedDelegate
@@ -54,58 +59,85 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     public var entries : Array<STNewsFeedEntry> = []
     
     public var lastUpdated : NSDate?
+	
+	public var criticalError : NSError?
+	public var parseError = [NSError]()
+	
+	private var concurrencyType : STNewsFeedParserConcurrencyType!
     
-    struct Dispatch {
-        private static var parallel : dispatch_queue_t!
+    private struct Dispatch {
+        private static var concurrentQueue : dispatch_queue_t!
     }
+	
+	lazy var concurrentQueue : dispatch_queue_t? = {
+		switch self.concurrencyType! {
+		case .CustomQueue:
+			return nil
+		case .MainQueue:
+			return dispatch_get_main_queue()
+		case .PrivateQueue:
+			if Dispatch.concurrentQueue == nil {
+				Dispatch.concurrentQueue = dispatch_queue_create(
+												"stae.rs.STNewsFeedParser.concurrentQueue",
+												DISPATCH_QUEUE_CONCURRENT)
+			}
+			
+			return Dispatch.concurrentQueue
+		}
+	}()
     
-    public init (feedFromUrl address : NSURL) {
+	public init (feedFromUrl url : NSURL, concurrencyType : STNewsFeedParserConcurrencyType) {
         super.init()
         
-        url = address
+        self.url = url
+		self.concurrencyType = concurrencyType
         
         info = STNewsFeedEntry()
         info.info = info
         
-        info.properties["link"] = address.absoluteString
+        info.properties["link"] = url.absoluteString
         
         target = info
-        
-        if Dispatch.parallel == nil {
-            Dispatch.parallel = dispatch_queue_create("stae.rs.STNewsFeedParser.parallel", nil)
-        }
     }
+	
     public func parse () {
-        
-        if isParsing == false {
-          
+		if isParsing == false {
             entries.removeAll(keepCapacity: true)
             info.sourceType = FeedType.NONE
             
             parseMode = .FEED
-            
-            dispatch_async (Dispatch.parallel, {
-                
-                if let parser = NSXMLParser(contentsOfURL: self.url) {
-                    self.parser = parser
-                    
-                    parser.delegate = self
-                    parser.parse()
-                } else {
-                    let errorCode = STNewsFeedParserError.Address
-                    let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                        ["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
-                    
-                    self.delegate?.newsFeed?(self, corruptFeed: parseError)
-                }
-                
-            })
-            
+			
+			if let workingQueue = concurrentQueue {
+				
+				dispatch_async (workingQueue, {
+				
+				if let parser = NSXMLParser(contentsOfURL: self.url) {
+					self.parser = parser
+					
+					parser.delegate = self
+					parser.parse()
+					
+				} else {
+					
+					let errorCode = STNewsFeedParserError.Address
+					self.criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
+					
 					self.delegate?.newsFeed(corruptFeed: self, withError: self.criticalError!)
+				}
+				
+				})
+			
+			} else {
+				let errorCode = STNewsFeedParserError.DispatchError
+				criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+					["description" : "FOR CUSTOM DISPATCH QUEUE SET concurrentQueue FOR GIVEN INSTANCE"])
+				
 				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+			}
         }
-        
     }
+	
     public func abortParsing () {
         parser?.abortParsing()
         parser?.delegate = nil
