@@ -31,17 +31,17 @@ public enum STNewsFeedParserError : Int {
 // MARK: - STNewsFeedDelegate
 // The parser's delegate is informed of events throught the methods
 @objc public protocol STNewsFeedParserDelegate : NSObjectProtocol {
-    // Feed lifecicle methods
-    func willBeginFeedParsing(feed : STNewsFeedParser)
-    // sent when the feed is validated and about to be parsed
-    // ask for abortParsing() for feed info only
-    func didFinishFeedParsing(feed : STNewsFeedParser)
+    //	Feed lifecicle methods
+	//	sent after feed header was read and body is about to be parsed
+    optional func newsFeed(willBeginFeedParsing feed : STNewsFeedParser) -> Bool // DEFAULT TRUE
+			 func newsFeed(didFinishFeedParsing feed : STNewsFeedParser)
     // send when the feed is parsed and all it's entries are validated
-    
-    optional func newsFeed(feed : STNewsFeedParser, XMLParserError error:NSError)
-    
-    optional func newsFeed(feed : STNewsFeedParser, corruptFeed error:NSError)
-    optional func newsFeed(feed : STNewsFeedParser, unknownElement elementName:String, withAttributes attributeDict:NSDictionary, andError error: NSError)
+	
+	//	Feed error methods
+			 func newsFeed(XMLParserErrorOn feed : STNewsFeedParser, withError error:NSError)
+			 func newsFeed(corruptFeed feed : STNewsFeedParser,		 withError error:NSError)
+	
+	optional func newsFeed(unknownElementOn feed : STNewsFeedParser, ofName elementName:String, withAttributes attributeDict:NSDictionary, andContent content : String)
 }
 
 // MARK: - STNewsFeedParser
@@ -101,6 +101,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                 
             })
             
+					self.delegate?.newsFeed(corruptFeed: self, withError: self.criticalError!)
+				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
         }
         
     }
@@ -128,7 +130,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     private var parseMode : ParseMode = ParseMode.FEED
     
     private var currentContent:String = ""
-    
+	
+	private var unknownElement : UnkownElement?
+	private struct UnkownElement {
+		var name : String
+		var attributeDict : NSDictionary
+	}
+	
     func parser(parser: NSXMLParser!, didStartElement elementName: String!, namespaceURI: String!, qualifiedName qName: String!, attributes attributeDict: NSDictionary!) {
         
         currentContent = ""
@@ -145,13 +153,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                     info.sourceType = FeedType.RSS
                 }
             default:
-                abortParsing()
-                
                 let errorCode = STNewsFeedParserError.CorruptFeed
-                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
                 
-                delegate?.newsFeed?(self, corruptFeed: parseError)
+                delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+				
+				abortParsing()
             }
         
         case .ATOM, .RSS, .PODCAST:
@@ -167,21 +175,24 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                             case .OrderedAscending:
                                 break
                             case .OrderedSame, .OrderedDescending:
-                                self.delegate?.didFinishFeedParsing(self)
+                                self.delegate?.newsFeed(didFinishFeedParsing: self)
                                 
                                 abortParsing()
                             }
                         }
-                        
-                        delegate?.willBeginFeedParsing(self)
+						if let willContinue = delegate?.newsFeed?(willBeginFeedParsing: self) {
+							if willContinue == false {
+								abortParsing()
+							}
+						}
                     } else {
-                        abortParsing()
-                        
                         let errorCode = STNewsFeedParserError.CorruptFeed
-                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                        criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                             ["description" : "CORRUPT FEED [\(url.absoluteString)]"])
-                        
-                        delegate?.newsFeed?(self, corruptFeed: parseError)
+						
+                        delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+						
+						abortParsing()
                     }
                 }
                 
@@ -191,20 +202,20 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             case "link", "url":
                 target.properties["link"] = attributeDict.valueForKey("href") as? String
             default:
-                let errorCode = STNewsFeedParserError.Element
-                let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                    ["description" : "UNKNOWN ELEMENT [\(elementName)]\nATTRIBUTES: [\(attributeDict)]"])
-                
-                delegate?.newsFeed?(self, unknownElement: elementName, withAttributes: attributeDict, andError: parseError)
+				unknownElement = UnkownElement(name: elementName, attributeDict: attributeDict)
             }
         }
     }
     
     public func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName:String!) {
-        
-        currentContent = currentContent.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
-        
-        switch info.sourceType {
+		
+		currentContent = currentContent.trimWhitespace()
+		
+		if let someElement = unknownElement {
+			delegate?.newsFeed?(unknownElementOn: self, ofName: someElement.name, withAttributes: someElement.attributeDict, andContent : currentContent)
+			
+			unknownElement = nil
+		}
         case .NONE:
             break
             
@@ -229,10 +240,11 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                         }
                     } else {
                         let errorCode = STNewsFeedParserError.CorruptFeed
-                        let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                            ["description" : "CORRUPT POST [\(url.absoluteString)]"/*\nPOST \(target.properties)"*/])
-                        
-                        delegate?.newsFeed?(self, corruptFeed: parseError)
+						let someError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+							["description" : "CORRUPT POST [\(url.absoluteString)]"/*\nPOST \(target.properties)"*/])
+                        parseError.append(someError)
+						
+                        delegate?.newsFeed(corruptFeed: self, withError: someError)
                     }
                 case .FEED:
                     break
@@ -250,14 +262,16 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     }
     
     public func parser(parser: NSXMLParser!, parseErrorOccurred parseError: NSError!) {
-        delegate?.newsFeed?(self, XMLParserError: parseError)
+		delegate?.newsFeed(XMLParserErrorOn: self, withError: parseError)
+		
+		abortParsing()
     }
     
     public func parserDidEndDocument(parser: NSXMLParser!) {
         lastUpdated = info.date
-        
-        self.delegate?.didFinishFeedParsing(self)
-        
+		
+		self.delegate?.newsFeed(didFinishFeedParsing: self)
+		
         abortParsing()
     }
 }
