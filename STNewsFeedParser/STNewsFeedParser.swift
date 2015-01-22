@@ -20,6 +20,25 @@
 
 import Foundation
 
+// MARK: - Extensions
+
+private extension NSDate {
+	func isBefore (someDate : NSDate) -> Bool {
+		switch self.compare(someDate) {
+		case .OrderedAscending:
+			return true
+		case .OrderedDescending, .OrderedSame:
+			return false
+		}
+	}
+}
+
+private extension String {
+	func trimWhitespace () -> String {
+		return self.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+	}
+}
+
 // MARK: - STNewsFeedParserError
 
 public enum STNewsFeedParserError : Int {
@@ -149,11 +168,18 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     private enum ParseMode {
         case FEED, ENTRY
     }
-    
+	
+	public var address : String {
+		get {
+			return url.absoluteString!
+		}
+	}
     private var url : NSURL!
     private weak var parser : NSXMLParser!
     public var isParsing : Bool {
-        return parser == nil ? false : true
+		get {
+			return parser != nil
+		}
     }
     
     private var target : STNewsFeedEntry!
@@ -244,25 +270,24 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			
 			unknownElement = nil
 		}
+		
+		switch info.sourceType {
         case .NONE:
             break
             
         case .ATOM, .RSS:
             switch elementName {
-                
-                
             case "entry", "item":
                 switch parseMode {
                 case .ENTRY:
                     if target.normalized {
                         if let date = lastUpdated {
-                            switch date.compare(target.date) {
-                            case .OrderedAscending:
-                                entries.append(target)
-                            case .OrderedSame, .OrderedDescending:
-                                abortParsing()
-                                parserDidEndDocument(parser)
-                            }
+							if date.isBefore(target.date) {
+								entries.append(target)
+							} else {
+								abortParsing()
+								parserDidEndDocument(parser)
+							}
                         } else {
                             entries.append(target)
                         }
