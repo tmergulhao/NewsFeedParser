@@ -35,6 +35,8 @@ internal class STNewsFeedParserTests : XCTestCase {
 	]
 	
 	override func setUp() {
+		super.setUp()
+		
 		for address in sampleAddresses {
 			if let someURL = NSURL(string: address) {
 				feeds.append(STNewsFeedParser(
