@@ -20,7 +20,8 @@
 
 import Foundation
 
-// MARK: - STNewsFeedError
+// MARK: - STNewsFeedDiscoveryError
+
 public enum STFeedDiscoveryError : Int {
     case CorruptHTML
     var domain : String {
@@ -32,10 +33,10 @@ public enum STFeedDiscoveryError : Int {
 // The parser's delegate is informed of events throught the methods
 @objc public protocol STNewsFeedDiscoveryDelegate : NSObjectProtocol {
     // Discoverer lifecycle method
-    func didFinishFeedDiscovery(page : STNewsFeedDiscovery)
+	func feedDiscovery(didFinishPage page : STNewsFeedDiscovery, withAddresses addresses : Array<FeedAddress>)
     // send when the feed is parsed and all it's entries are validated
-    
-    optional func feedDiscovery(page : STNewsFeedDiscovery, corruptHTML error:NSError)
+	
+    func feedDiscovery(page : STNewsFeedDiscovery, corruptHTML error:NSError)
 }
 
 // MARK: - STNewsFeedDiscovery
@@ -51,7 +52,7 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     
     public var url : NSURL!
     
-    public init (feedFromUrl url : NSURL) {
+    public init (pageFromUrl url : NSURL) {
         super.init()
         
         self.url = url
@@ -77,7 +78,7 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
         
         if let givenError = error {
             
-            delegate?.feedDiscovery?(self, corruptHTML: givenError)
+            delegate?.feedDiscovery(self, corruptHTML: givenError)
             
         } else {
             if let givenTitle = (html! =~ regexTitle).items.last {
@@ -110,7 +111,7 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
                     }
                 }
                 
-                delegate?.didFinishFeedDiscovery(self)
+                delegate?.feedDiscovery(didFinishPage: self, withAddresses: addresses)
                 
             } else {
                 
@@ -118,12 +119,11 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
                 let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "CORRUPT HTML [\(url.absoluteString)]"])
                 
-                delegate?.feedDiscovery?(self, corruptHTML: parseError)
+                delegate?.feedDiscovery(self, corruptHTML: parseError)
                 
             }
-        }
-        
-        
+		}
+		
     }
     /**
     Detect title of the page.
