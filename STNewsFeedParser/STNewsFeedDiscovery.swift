@@ -29,6 +29,52 @@ public enum STFeedDiscoveryError : Int {
     }
 }
 
+public class FeedAddress {
+	var type : FeedType
+	var title : String?
+	var address : NSURL!
+	
+	init? (ofElement element : String, onPageOfTitle pageTitle : String?) {
+		if let titleAttr = (element =~ regexTitleAttr).items.last {
+			title = titleAttr
+		} else {
+			title = pageTitle
+		}
+		
+		address = NSURL()
+		type = FeedType.NONE
+		
+		if let typeAttr = (element =~ regexTypeAttr).items.last {
+			switch typeAttr {
+			case "rss":
+				type = .RSS
+			case "atom":
+				type = .ATOM
+			default:
+				type = .NONE
+			}
+		} else {
+			return nil
+		}
+		
+		if let addressAttr = (element =~ regexAddressAttr).items.last {
+			if let someURL = NSURL(string: addressAttr) {
+				address = someURL
+			} else {
+				return nil
+			}
+		} else {
+			return nil
+		}
+	}
+	
+	private var regexTitle = "<title>(.*)</title>"
+	
+	private var regexTypeAttr = "type=\"application/(rss|atom)?\\+xml\""
+	private var regexTitleAttr = "title=\"([\\w|\\s|!|—|-]*)\""
+	private var regexAddressAttr = "href=\"(\\S*)\""
+}
+
 // MARK: - STNewsFeedDelegate
 // The parser's delegate is informed of events throught the methods
 @objc public protocol STNewsFeedDiscoveryDelegate : NSObjectProtocol {
@@ -45,11 +91,10 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     // MARK: - Public
     public weak var delegate : STNewsFeedDiscoveryDelegate?
     
-    public var feeds : Array<FeedLinks> = []
+    public var addresses : Array<FeedAddress> = []
     
     public var title : String!
     public var image : String!
-    
     public var url : NSURL!
     
     public init (pageFromUrl url : NSURL) {
@@ -58,56 +103,26 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
         self.url = url
     }
     
-    public struct FeedLinks {
-        var type : FeedType = FeedType.NONE
-        var title : String!
-        var address : String!
-        var validate : Bool {
-            if type == .NONE { return false }
-            if title == nil || title == "" { return false }
-            if address == nil || address == "" { return false }
-            
-            return true
-        }
-    }
-    
     public func discover () {
-        var error : NSError?
+		
+		var error : NSError?
         
-        var html = NSString(contentsOfURL: self.url, encoding: NSUTF8StringEncoding, error: &error)
+        var html = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
         
         if let givenError = error {
             
             delegate?.feedDiscovery(self, corruptHTML: givenError)
             
-        } else {
-            if let givenTitle = (html! =~ regexTitle).items.last {
+		} else if let head = (html! =~ regexHead).items.first {
+			
+			if let givenTitle = (head =~ regexTitle).items.last {
+				
                 self.title = givenTitle
-                self.image = (html! =~ regexImage).items.last
+                self.image = (head =~ regexImage).items.last
                 
-                for item in (html! =~ regexLink).items {
-                    var typeAttr = (item =~ regexTypeAttr).items.last
-                    var title = (item =~ regexTitleAttr).items.last
-                    var address = (item =~ regexAddressAttr).items.last
-                    
-                    if title == nil {
-                        title = self.title
-                    }
-                    
-                    var type : FeedType!
-                    switch typeAttr! {
-                    case "rss":
-                        type = FeedType.RSS
-                    case "atom":
-                        type = FeedType.ATOM
-                    default:
-                        type = FeedType.NONE
-                    }
-                    
-                    var feed = FeedLinks(type: type, title: title, address: address)
-                    
-                    if feed.validate {
-                        feeds.append(feed)
+                for element in (head =~ regexLink).items {
+					if let someAddress = FeedAddress(ofElement: element, onPageOfTitle: title) {
+                        addresses.append(someAddress)
                     }
                 }
                 
@@ -129,15 +144,13 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     Detect title of the page.
     */
     private var regexTitle = "<title>(.*)</title>"
+	private var regexHead = "<head>(\\s|\\S)*</head>"
     /**
     Regular expression to scan from a HTML feed type, optional title and link on array. Examples:
     
     *  ["atom", "Title", "/feeds/main"]
     *  ["rss", "Title", "http://rss.example/feeds/main"]
     */
-    private var regexTypeAttr = "type=\"application/(rss|atom)?\\+xml\""
-    private var regexTitleAttr = "title=\"([\\w|\\s|!|—|-]*)\""
-    private var regexAddressAttr = "href=\"(\\S*)\""
     private var regexLink = "<link" + "\\s*" + "rel=\"alternate\"" + "\\s*" + "type=\"application/(?:rss|atom)?\\+xml\"" + "\\s*" + "(?:title=\"([\\w|\\s|!|—|-]*)\")?" + "\\s*" + "href=\"(?:\\S*)\"" + "[^>]*" + "/>"
     /**
     Detect iOS image from HTML tag
