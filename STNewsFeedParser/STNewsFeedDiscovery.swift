@@ -20,6 +20,18 @@
 
 import Foundation
 
+internal extension String {
+	func removeFinalSlash () -> String {
+		if self.hasSuffix("/") {
+			return self.substringWithRange(
+				Range<String.Index>(
+					start: self.startIndex,
+					end: advance(self.endIndex, -1)))
+		}
+		return self
+	}
+}
+
 // MARK: - STNewsFeedDiscoveryError
 
 public enum STFeedDiscoveryError : Int {
@@ -32,16 +44,16 @@ public enum STFeedDiscoveryError : Int {
 public class FeedAddress {
 	var type : FeedType
 	var title : String?
-	var address : NSURL!
+	var url : NSURL!
 	
 	init? (ofElement element : String, onPageOfTitle pageTitle : String?) {
 		if let titleAttr = (element =~ regexTitleAttr).items.last {
-			title = titleAttr
+			title = titleAttr.trimWhitespace()
 		} else {
-			title = pageTitle
+			title = pageTitle?.trimWhitespace()
 		}
 		
-		address = NSURL()
+		url = NSURL()
 		type = FeedType.NONE
 		
 		if let typeAttr = (element =~ regexTypeAttr).items.last {
@@ -59,7 +71,7 @@ public class FeedAddress {
 		
 		if let addressAttr = (element =~ regexAddressAttr).items.last {
 			if let someURL = NSURL(string: addressAttr) {
-				address = someURL
+				url = someURL
 			} else {
 				return nil
 			}
@@ -94,7 +106,7 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     public var addresses : Array<FeedAddress> = []
     
     public var title : String!
-    public var image : String!
+    public var imageURL : NSURL?
     public var url : NSURL!
     
     public init (pageFromUrl url : NSURL) {
@@ -106,6 +118,12 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     public func discover () {
 		
 		var error : NSError?
+		
+		var pageURLString : String! = url.absoluteString
+		
+		if pageURLString.hasSuffix("/") {
+			pageURLString = pageURLString.removeFinalSlash()
+		}
         
         var html = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
         
@@ -117,11 +135,28 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
 			
 			if let givenTitle = (head =~ regexTitle).items.last {
 				
-                self.title = givenTitle
-                self.image = (head =~ regexImage).items.last
-                
+                title = givenTitle.trimWhitespace()
+				
+				if let imageStringURL = (head =~ regexImage).items.last {
+					if imageStringURL.hasPrefix("/") {
+						imageURL = NSURL(string: pageURLString + imageStringURL)
+					} else {
+						imageURL = NSURL(string: imageStringURL)
+					}
+				} else if let imageStringURL = (head =~ regexFavicon).items.last {
+					if imageStringURL.hasPrefix("/") {
+						imageURL = NSURL(string: pageURLString + imageStringURL)
+					} else {
+						imageURL = NSURL(string: imageStringURL)
+					}
+				}
+				
                 for element in (head =~ regexLink).items {
 					if let someAddress = FeedAddress(ofElement: element, onPageOfTitle: title) {
+						if someAddress.url.absoluteString!.hasPrefix("/") {
+							someAddress.url = NSURL(string: pageURLString + someAddress.url.absoluteString!)
+						}
+						
                         addresses.append(someAddress)
                     }
                 }
