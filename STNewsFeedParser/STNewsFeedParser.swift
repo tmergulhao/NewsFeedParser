@@ -33,9 +33,38 @@ private extension NSDate {
 	}
 }
 
-private extension String {
+internal extension String {
 	func trimWhitespace () -> String {
 		return self.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+	}
+	var length : Int {
+		var nsstring = NSString(string: self)
+		return nsstring.length
+	}
+	
+	//	How do you use String.substringWithRange? (or, how do Ranges work in Swift?) on StackOverflow
+	//	http://stackoverflow.com/questions/24044851/how-do-you-use-string-substringwithrange-or-how-do-ranges-work-in-swift
+	
+	func hasInfix (input : String) -> Bool {
+		let length = self.length
+		let inputLength = input.length
+		
+		if inputLength > length {
+			return false
+		}
+		
+		for var i = 1; i + inputLength < length; i++ {
+			let excerpt = self.substringWithRange(
+				Range<String.Index>(
+					start: advance(self.startIndex, i),
+					end: advance(self.startIndex, i + inputLength)))
+			
+			if excerpt == input {
+				return true
+			}
+		}
+		
+		return false
 	}
 }
 
@@ -226,19 +255,17 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			case "updated", "lastBuildDate", "pubDate", "published": break
 				
 			// UNSUPPORTED
-			case "channel", "generator", "language", "rights", "comments", "category", "content:encoded", "name", "author", "content", "media:thumbnail", "uri": break
+			case "channel", "generator", "language", "rights", "comments",
+				 "category", "content:encoded", "name", "author", "content",
+				 "media:thumbnail", "uri", "ttl", "managingEditor": break
 			
 			// VENDOR UNSUPPORTED
-			case "slash:comments", "wfw:commentRss", "ttl", "xhtml:meta", "managingEditor", "openSearch:totalResults", "openSearch:startIndex", "openSearch:itemsPerPage", "thr:total",
-			// SY
-				"sy:updateFrequency", "sy:updateFrequency","sy:updatePeriod", "sy:updateFrequency",
-			// ATOM
-				"atom:link", "atom:updated", "atom10:link", "atom:id",
-			// DC
-				"dc:language", "dc:rights", "dc:subject", "dc:date", "dc:creator",
-			// FEEDBURNER
-				"feedburner:info", "feedburner:info", "feedburner:feedburnerHostname", "feedburner:feedFlare", "feedburner:info", "feedburner:info", "feedburner:emailServiceId", "feedburner:origLink"
-				: break
+			case let someElementName where someElementName.hasPrefix("atom"): break
+			case let someElementName where someElementName.hasPrefix("dc"): break
+			case let someElementName where someElementName.hasPrefix("feedburner"): break
+			case let someElementName where someElementName.hasPrefix("sy"): break
+			case let someElementName where someElementName.hasInfix(":"): break
+				
             case "entry", "item":
                 if parseMode == .FEED {
                     if info.normalized {
@@ -278,6 +305,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             }
         }
     }
+	
+	public func parser(parser: NSXMLParser!, foundCharacters string: String!) { currentContent += string }
     
     public func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName:String!) {
 		
@@ -326,10 +355,6 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                 }
             }
         }
-    }
-
-    public func parser(parser: NSXMLParser!, foundCharacters string: String!) {
-        currentContent += string
     }
     
     public func parser(parser: NSXMLParser!, parseErrorOccurred parseError: NSError!) {
