@@ -151,9 +151,10 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     *  ["atom", "Title", "/feeds/main"]
     *  ["rss", "Title", "http://rss.example/feeds/main"]
     */
-    private var regexLink = "<link" + "\\s*" + "rel=\"alternate\"" + "\\s*" + "type=\"application/(?:rss|atom)?\\+xml\"" + "\\s*" + "(?:title=\"([\\w|\\s|!|—|-]*)\")?" + "\\s*" + "href=\"(?:\\S*)\"" + "[^>]*" + "/>"
+    private var regexLink = "<link" + "\\s*" + "rel=\"alternate\"" + "\\s*" + "type=\"application/(?:rss|atom)?\\+xml\"" + "\\s*" + "(?:title=\"[\\w|\\s|!|—|-|/\\&-|;]*\")?" + "\\s*" + "href=\"(?:\\S*)\""// + "[^>]*" + "/?>"
     /**
     Detect iOS image from HTML tag
     */
-    private var regexImage = "<link\\s*rel=\"apple-touch-icon-?.*?\"\\s*href=\"(.*)\"\\s*/>"
+    private var regexImage = "<link\\s*rel=\"apple-touch-icon-?.*?\"\\s*href=\"(.*)\"\\s*/?>"
+	private var regexFavicon = "<link\\s*rel=\"(?:.*)?icon\"\\s*\\s*href=\"(.*)\"\\s*/?>"
 }
