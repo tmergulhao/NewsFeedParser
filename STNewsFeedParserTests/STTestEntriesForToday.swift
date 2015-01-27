@@ -37,9 +37,6 @@ internal class STTestEntriesForToday : STNewsFeedParserTests, STNewsFeedParserDe
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(willBeginFeedParsing feed: STNewsFeedParser) -> Bool {
-		return true
-	}
 	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser) {
 		println("\(feed.info.sourceType.verbose) : \(feed.info.title) on \(feed.info.domain!)")
 		

@@ -32,7 +32,7 @@ internal class STTestFeedHeader : STNewsFeedParserTests, STNewsFeedParserDelegat
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(willBeginFeedParsing feed: STNewsFeedParser) -> Bool {
+	func newsFeed(shouldBeginFeedParsing feed: STNewsFeedParser) -> Bool {
 		println("\(feed.info.sourceType.verbose) : \(feed.info.title) on \(feed.info.domain!)")
 		expectations[feed.address]!.fulfill()
 		

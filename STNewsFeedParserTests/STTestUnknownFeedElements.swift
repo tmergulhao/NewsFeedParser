@@ -32,7 +32,6 @@ internal class STTestUnknownFeedElements: STNewsFeedParserTests, STNewsFeedParse
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(willBeginFeedParsing feed: STNewsFeedParser) -> Bool { return true }
 	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser) { expectations[feed.address]!.fulfill() }
 
 	func newsFeed(XMLParserErrorOn feed : STNewsFeedParser, withError error:NSError) {}

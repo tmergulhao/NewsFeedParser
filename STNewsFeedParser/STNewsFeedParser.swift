@@ -20,6 +20,9 @@
 
 import Foundation
 
+//	TODO: Refactor parser class on Swift tuple protocol patterns for error handling
+//	http://nshipster.com/the-death-of-cocoa/
+
 // MARK: - Extensions
 
 private extension NSDate {

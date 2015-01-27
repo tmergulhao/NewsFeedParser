@@ -61,10 +61,10 @@ internal class STTestHTMLPageDiscovery: XCTestCase, STNewsFeedDiscoveryDelegate 
 	}
 	func feedDiscovery(didFinishPage page: STNewsFeedDiscovery, withAddresses addresses: Array<FeedAddress>) {
 		println(page.title)
-		println(page.image)
+		println(page.imageURL?.absoluteString)
 		
 		for address in page.addresses {
-			println("\t\(address.type.verbose) : \(address.title!), \(address.address.absoluteString!)")
+			println("\t\(address.type.verbose) : \(address.title!), \(address.url.absoluteString!)")
 		}
 		
 		println()

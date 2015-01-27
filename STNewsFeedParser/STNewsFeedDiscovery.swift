@@ -34,6 +34,11 @@ internal extension String {
 
 // MARK: - STNewsFeedDiscoveryError
 
+//	TODO: Try more legible aproach to parsing HTML using TFHpple
+//	https://github.com/topfunky/hpple
+//	https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/BuildingCocoaApps/MixandMatch.html#//apple_ref/doc/uid/TP40014216-CH10-XID_75
+//	http://www.raywenderlich.com/14172/how-to-parse-html-on-ios
+
 public enum STFeedDiscoveryError : Int {
     case CorruptHTML
     var domain : String {
