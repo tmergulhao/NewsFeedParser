@@ -18,6 +18,13 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+//  TODO: Look for validation and parsing hints for dates and URL's on the blocks of code.
+//  https://github.com/danieloeh/EinschlafenPodcastAndroidApp
+//  https://github.com/boncey/ruby-podcast
+//  https://github.com/gothfox/Tiny-Tiny-RSS
+//  https://github.com/danieloeh/AntennaPod
+//  https://github.com/arled/RSSwift
+
 import Foundation
 
 // MARK: - FeedTypes
