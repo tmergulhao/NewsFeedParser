@@ -120,8 +120,11 @@ public class STNewsFeedEntry: NSObject {
             // Atom standart tags
             "updated", "published"
             ) {
-                
-                var dateFormat = NSDateFormatter()
+				
+				let dateFormat = NSDateFormatter()
+				
+				dateFormat.locale = NSLocale(localeIdentifier: "en_US_POSIX")
+				dateFormat.timeZone = NSTimeZone(forSecondsFromGMT: 0)
                 
                 // RFC822 date format
                 // RSS Standart
@@ -130,7 +133,13 @@ public class STNewsFeedEntry: NSObject {
                 if let date = dateFormat.dateFromString(dateString) {
                     return date
                 }
-                
+				
+				dateFormat.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+				
+				if let date = dateFormat.dateFromString(dateString) {
+					return date
+				}
+				
                 // TODO: Consistent date parsings
                 // Another A List Apart requirement
                 // "2014-12-26T17:17:00+00:00"
@@ -139,17 +148,19 @@ public class STNewsFeedEntry: NSObject {
                 // Some variation of the RFC3339 date format
                 // Date formating is a serious data dump problem
                 // Atom Standart
-                
+				
+				dateFormat.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
+				
+				if let date = dateFormat.dateFromString(dateString) {
+					return date
+				}
+				
                 var trimDateString = dateString.substringWithRange(
                     Range<String.Index>(
                         start: advance(dateString.startIndex, 0),
                         end: advance(dateString.startIndex/*endIndex*/, 19)
                     )
                 )
-                
-                dateFormat.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
-                dateFormat.locale = NSLocale(localeIdentifier: "en_US_POSIX")
-                dateFormat.timeZone = NSTimeZone(forSecondsFromGMT: 0)
                 
                 if let date = dateFormat.dateFromString(trimDateString) {
                     return date
