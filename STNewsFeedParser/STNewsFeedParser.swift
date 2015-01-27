@@ -86,7 +86,7 @@ public enum STNewsFeedParserConcurrencyType : Int {
 @objc public protocol STNewsFeedParserDelegate : NSObjectProtocol {
     //	Feed lifecicle methods
 	//	sent after feed header was read and body is about to be parsed
-    optional func newsFeed(willBeginFeedParsing feed : STNewsFeedParser) -> Bool // DEFAULT TRUE
+    optional func newsFeed(shouldBeginFeedParsing feed : STNewsFeedParser) -> Bool // DEFAULT TRUE
 			 func newsFeed(didFinishFeedParsing feed : STNewsFeedParser)
     // send when the feed is parsed and all it's entries are validated
 	
@@ -100,7 +100,9 @@ public enum STNewsFeedParserConcurrencyType : Int {
 // MARK: - STNewsFeedParser
 
 public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
+	
     // MARK: - Public
+	
     public weak var delegate : STNewsFeedParserDelegate?
     
     public var info : STNewsFeedEntry!
@@ -279,8 +281,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                                 abortParsing()
                             }
                         }
-						if let willContinue = delegate?.newsFeed?(willBeginFeedParsing: self) {
-							if willContinue == false {
+						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self) {
+							if shouldParse == false {
 								abortParsing()
 							}
 						}
@@ -309,8 +311,6 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 	public func parser(parser: NSXMLParser!, foundCharacters string: String!) { currentContent += string }
     
     public func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName:String!) {
-		
-		currentContent = currentContent.trimWhitespace()
 		
 		if let someElement = unknownElement {
 			delegate?.newsFeed?(unknownElementOn: self, ofName: someElement.name, withAttributes: someElement.attributeDict, andContent : currentContent)
@@ -350,7 +350,9 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                     break
                 }
             default:
-                if !currentContent.isEmpty {
+				currentContent = currentContent.trimWhitespace()
+				
+                if currentContent.isEmpty == false {
                     target.properties[elementName] = currentContent
                 }
             }
