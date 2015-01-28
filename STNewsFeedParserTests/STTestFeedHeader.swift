@@ -32,13 +32,15 @@ internal class STTestFeedHeader : STNewsFeedParserTests, STNewsFeedParserDelegat
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(shouldBeginFeedParsing feed: STNewsFeedParser) -> Bool {
-		println("\(feed.info.sourceType.verbose) : \(feed.info.title) on \(feed.info.domain!)")
+	func newsFeed(shouldBeginFeedParsing feed: STNewsFeedParser, withInfo info: STNewsFeedEntry) -> Bool {
+		
+		println("\(info.sourceType.verbose) : \(info.title) on \(info.domain!)")
 		expectations[feed.address]!.fulfill()
 		
 		return false
 	}
-	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser) {}
+	
+	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser, withInfo info: STNewsFeedEntry, withEntries entries: Array<STNewsFeedEntry>) {}
 	
 	func newsFeed(XMLParserErrorOn feed : STNewsFeedParser, withError error:NSError) {}
 	func newsFeed(corruptFeed feed : STNewsFeedParser,		 withError error:NSError) {}

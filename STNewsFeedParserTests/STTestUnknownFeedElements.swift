@@ -32,13 +32,16 @@ internal class STTestUnknownFeedElements: STNewsFeedParserTests, STNewsFeedParse
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser) { expectations[feed.address]!.fulfill() }
+	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser, withInfo info: STNewsFeedEntry, withEntries entries: Array<STNewsFeedEntry>) {
+		expectations[feed.address]!.fulfill()
+	}
 
 	func newsFeed(XMLParserErrorOn feed : STNewsFeedParser, withError error:NSError) {}
 	func newsFeed(corruptFeed feed : STNewsFeedParser,		withError error:NSError) {}
 
 	func newsFeed(unknownElementOn feed: STNewsFeedParser, ofName elementName: String, withAttributes attributeDict: NSDictionary, andContent content: String) {
-		println("\(feed.info.title) : \(elementName) : \(content)")
+		println("\(feed.address) : \(elementName) : \(content)")
 		println("\(attributeDict)")
 	}
+	
 }

@@ -37,10 +37,11 @@ internal class STTestEntriesForToday : STNewsFeedParserTests, STNewsFeedParserDe
 	
 	// MARK: - STNewsFeedParserDelegate
 	
-	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser) {
-		println("\(feed.info.sourceType.verbose) : \(feed.info.title) on \(feed.info.domain!)")
+	func newsFeed(didFinishFeedParsing feed: STNewsFeedParser, withInfo info: STNewsFeedEntry, withEntries entries: Array<STNewsFeedEntry>) {
 		
-		for entry in feed.entries {
+		println("\(info.sourceType.verbose) : \(info.title) on \(info.domain!)")
+		
+		for entry in entries {
 			println("\t\(entry.title)")
 			println("\t\(entry.link)")
 			println("\t\(entry.date)")
