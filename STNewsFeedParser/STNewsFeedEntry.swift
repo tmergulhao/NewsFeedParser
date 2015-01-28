@@ -88,7 +88,7 @@ Generic non intanciable entry type with according methods and properties
 public class STNewsFeedEntry: NSObject {
     
     // MARK: - Lazy contextual mandatory variables
-    public lazy var title : String! = self.properties.findAny("title", "subtitle", "description", "summary", "url", "link")
+    public lazy var title : String! = self.properties.findAny("title", "subtitle", "description", "summary", "url", "link", "address")
     public lazy var link : String! = self.properties.findAny("link", "url", "address")
     public lazy var date : NSDate! = self.parseDate()
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"THE RSS URL"]];
@@ -97,16 +97,8 @@ public class STNewsFeedEntry: NSObject {
 		
 		var infoStr : String?
 		
-		if self.title == nil {
-			infoStr = "TITLE"
-		}
-		
 		if self.link == nil {
-			if infoStr == nil {
-				infoStr = "LINK"
-			} else {
-				infoStr! += ", LINK"
-			}
+			infoStr = "LINK"
 		}
 		
 		if self.date == nil {
