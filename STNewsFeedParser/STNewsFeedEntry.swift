@@ -92,15 +92,55 @@ public class STNewsFeedEntry: NSObject {
     public lazy var link : String! = self.properties.findAny("link", "url", "address")
     public lazy var date : NSDate! = self.parseDate()
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"THE RSS URL"]];
-	internal lazy var normalized : Bool = {
-		if self.title == nil { return false }
-		if self.link == nil { return false }
-		if self.date == nil { return false }
+	
+	internal func normalize (error : NSErrorPointer) -> Bool {
 		
-		if self.info == nil { return false }
+		var infoStr : String?
+		
+		if self.title == nil {
+			infoStr = "TITLE"
+		}
+		
+		if self.link == nil {
+			if infoStr == nil {
+				infoStr = "LINK"
+			} else {
+				infoStr! += ", LINK"
+			}
+		}
+		
+		if self.date == nil {
+			if infoStr == nil {
+				infoStr = "DATE"
+			} else {
+				infoStr! += ", DATE"
+			}
+		}
+		
+		if self.info == nil {
+			if infoStr == nil {
+				infoStr = "INFO"
+			} else {
+				infoStr! += ", INFO"
+			}
+		}
+		
+		if infoStr != nil {
+			if self.info == self {
+				infoStr! = "CORRUPT FEED ON " + infoStr!
+			} else {
+				infoStr! = "CORRUPT ENTRY ON " + infoStr!
+			}
+			
+			let errorCode = STNewsFeedParserError.CorruptFeed
+			
+			error.memory = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:["description" : infoStr!])
+			
+			return false
+		}
 		
 		return true
-	}()
+	}
 	
     // MARK: - Lazy contextual optional variables
     public lazy var summary : String? = self.properties.findAny("subtitle", "description", "summary")

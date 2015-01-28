@@ -93,10 +93,14 @@ public enum STNewsFeedParserConcurrencyType : Int {
 			 func newsFeed(didFinishFeedParsing feed : STNewsFeedParser)
     // send when the feed is parsed and all it's entries are validated
 	
-	//	Feed error methods
+	//	Fatal error methods
+	//	AFTER THIS CALL THE FEED PARSING WILL BE ABORTED
 			 func newsFeed(XMLParserErrorOn feed : STNewsFeedParser, withError error:NSError)
-			 func newsFeed(corruptFeed feed : STNewsFeedParser,		 withError error:NSError)
+			 func newsFeed(corruptFeed		feed : STNewsFeedParser, withError error:NSError)
 	
+	//	Inconsistency on parsing methods
+	//	This call will not yield abortion of parsing
+	optional func newsFeed(corruptEntryOn   feed : STNewsFeedParser, entry : STNewsFeedEntry,   withError error:NSError)
 	optional func newsFeed(unknownElementOn feed : STNewsFeedParser, ofName elementName:String, withAttributes attributeDict:NSDictionary, andContent content : String)
 }
 
@@ -171,7 +175,6 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 					parser.parse()
 					
 				} else {
-					
 					let errorCode = STNewsFeedParserError.Address
 					self.criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
@@ -273,7 +276,9 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				
             case "entry", "item":
                 if parseMode == .FEED {
-                    if info.normalized {
+					var error : NSError?
+					
+                    if info.normalize(&error) {
                         if let date = lastUpdated {
                             switch date.compare(info.date) {
                             case .OrderedAscending:
@@ -290,9 +295,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 							}
 						}
                     } else {
-                        let errorCode = STNewsFeedParserError.CorruptFeed
-                        criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                            ["description" : "CORRUPT FEED [\(url.absoluteString)]"])
+						criticalError = error!
 						
                         delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
 						
@@ -330,7 +333,9 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             case "entry", "item":
                 switch parseMode {
                 case .ENTRY:
-                    if target.normalized {
+					var error : NSError?
+					
+                    if target.normalize (&error) {
                         if let date = lastUpdated {
 							if date.isBefore(target.date) {
 								entries.append(target)
@@ -342,12 +347,9 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                             entries.append(target)
                         }
                     } else {
-                        let errorCode = STNewsFeedParserError.CorruptFeed
-						let someError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-							["description" : "CORRUPT POST [\(url.absoluteString)]"/*\nPOST \(target.properties)"*/])
-                        parseError.append(someError)
+                        parseError.append(error!)
 						
-                        delegate?.newsFeed(corruptFeed: self, withError: someError)
+						delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!)
                     }
                 case .FEED:
                     break
