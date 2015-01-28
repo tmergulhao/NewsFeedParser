@@ -253,16 +253,11 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				
 			default:
 				
-				dispatch_sync(concurrentQueue, {
-					
-					let errorCode = STNewsFeedParserError.CorruptFeed
-					let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-						["description" : "CORRUPT FEED [\(self.address)] [\(elementName)]"])
-					
-					self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
-					
-				})
+				let errorCode = STNewsFeedParserError.CorruptFeed
+				let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+					["description" : "CORRUPT FEED [\(self.address)] [\(elementName)]"])
 				
+				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
 				
 				abortParsing()
 				
@@ -279,8 +274,6 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 					var error : NSError?
 					
 					if info.normalize(&error) == false {
-						
-						// dispatch_sync(concurrentQueue, { })
 						
 						self.delegate?.newsFeed(corruptFeed: self, withError: error!)
 						
