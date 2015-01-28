@@ -89,8 +89,8 @@ public enum STNewsFeedParserConcurrencyType : Int {
 @objc public protocol STNewsFeedParserDelegate : NSObjectProtocol {
     //	Feed lifecicle methods
 	//	sent after feed header was read and body is about to be parsed
-    optional func newsFeed(shouldBeginFeedParsing feed : STNewsFeedParser) -> Bool // DEFAULT TRUE
-			 func newsFeed(didFinishFeedParsing feed : STNewsFeedParser)
+	optional func newsFeed(shouldBeginFeedParsing feed : STNewsFeedParser,  withInfo info : STNewsFeedEntry) -> Bool // DEFAULT TRUE
+			 func newsFeed(didFinishFeedParsing	  feed : STNewsFeedParser,	withInfo info : STNewsFeedEntry, withEntries entries : Array<STNewsFeedEntry>)
     // send when the feed is parsed and all it's entries are validated
 	
 	//	Fatal error methods
@@ -112,8 +112,8 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 	
     public weak var delegate : STNewsFeedParserDelegate?
     
-    public var info : STNewsFeedEntry!
-    public var entries : Array<STNewsFeedEntry> = []
+    private var info : STNewsFeedEntry!
+    private var entries : Array<STNewsFeedEntry> = []
     
     public var lastUpdated : NSDate?
 	
@@ -123,13 +123,15 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         private static var concurrentQueue : dispatch_queue_t!
     }
 	
-	lazy var concurrentQueue : dispatch_queue_t? = {
+	public lazy var concurrentQueue : dispatch_queue_t? = {
 		switch self.concurrencyType! {
-		case .CustomQueue:
-			return nil
-		case .MainQueue:
-			return dispatch_get_main_queue()
+		
+		case .CustomQueue: return nil
+		
+		case .MainQueue: return dispatch_get_main_queue()
+		
 		case .PrivateQueue:
+			
 			if Dispatch.concurrentQueue == nil {
 				Dispatch.concurrentQueue = dispatch_queue_create(
 												"stae.rs.STNewsFeedParser.concurrentQueue",
@@ -156,7 +158,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 	
     public func parse () {
 		if isParsing == false {
-            entries.removeAll(keepCapacity: true)
+			
             info.sourceType = FeedType.NONE
             
             parseMode = .FEED
@@ -166,27 +168,34 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				dispatch_async (workingQueue, {
 				
 				if let parser = NSXMLParser(contentsOfURL: self.url) {
+					
 					self.parser = parser
 					
 					parser.delegate = self
 					parser.parse()
 					
 				} else {
+					
 					let errorCode = STNewsFeedParserError.Address
+					
 					let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
 					
 					self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
+					
 				}
 				
 				})
 			
 			} else {
+				
 				let errorCode = STNewsFeedParserError.DispatchError
+				
 				let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 					["description" : "FOR CUSTOM DISPATCH QUEUE SET concurrentQueue FOR GIVEN INSTANCE"])
 				
 				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
+				
 			}
         }
     }
@@ -197,37 +206,37 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         parser = nil
     }
     
-    // MARK: - Private, NSXMLParserDelegate
+    // MARK: - NSXMLParserDelegate
     
     private enum ParseMode {
         case FEED, ENTRY
     }
+	private var lastParseMode : ParseMode = ParseMode.FEED
+	private var parseMode : ParseMode = ParseMode.FEED
 	
+	private var target : STNewsFeedEntry!
+	
+    private var url : NSURL!
 	public var address : String {
 		get {
 			return url.absoluteString!
 		}
 	}
-    private var url : NSURL!
+	
     private weak var parser : NSXMLParser!
-    public var isParsing : Bool {
+	public var isParsing : Bool {
 		get {
 			return parser != nil
 		}
     }
     
-    private var target : STNewsFeedEntry!
-    
-    private var lastParseMode : ParseMode = ParseMode.FEED
-    private var parseMode : ParseMode = ParseMode.FEED
-    
-    private var currentContent:String = ""
+    private var currentContent : String = ""
 	
-	private var unknownElement : UnkownElement?
 	private struct UnkownElement {
 		var name : String
 		var attributeDict : NSDictionary
 	}
+	private var unknownElement : UnkownElement?
 	
     func parser(parser: NSXMLParser!, didStartElement elementName: String!, namespaceURI: String!, qualifiedName qName: String!, attributes attributeDict: NSDictionary!) {
         
@@ -235,23 +244,67 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         
         switch info.sourceType {
         case .NONE:
+			
             switch elementName {
-            case "feed":
-                info.sourceType = FeedType.ATOM
-            case "channel", "rss":
-                info.sourceType = FeedType.RSS
-            default:
-                let errorCode = STNewsFeedParserError.CorruptFeed
-                let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-                    ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
-                
-                delegate?.newsFeed(corruptFeed: self, withError: criticalError)
+				
+            case "feed": info.sourceType = FeedType.ATOM
+				
+            case "channel", "rss": info.sourceType = FeedType.RSS
+				
+			default:
+				
+				dispatch_sync(concurrentQueue, {
+					
+					let errorCode = STNewsFeedParserError.CorruptFeed
+					let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+						["description" : "CORRUPT FEED [\(self.address)] [\(elementName)]"])
+					
+					self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
+					
+				})
+				
 				
 				abortParsing()
+				
             }
 			
         case .ATOM, .RSS:
+			
             switch elementName {
+				
+			case "entry", "item":
+				
+				if parseMode == .FEED {
+					
+					var error : NSError?
+					
+					if info.normalize(&error) == false {
+						
+						// dispatch_sync(concurrentQueue, { })
+						
+						self.delegate?.newsFeed(corruptFeed: self, withError: error!)
+						
+						abortParsing()
+						
+					} else {
+						
+						if let date = lastUpdated {
+							
+							if date.isBefore(info.date) == false { parserDidEndDocument(parser); return }
+							
+						}
+						
+						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self, withInfo: info) {
+							
+							if shouldParse == false { abortParsing(); return }
+							
+						}
+					}
+				}
+				
+				parseMode = ParseMode.ENTRY
+				
+				target = info.sourceType.entry(info)
 			
 			// DATA ELEMENTS
 			case "title", "subtitle", "id", "description", "guid", "summary": break
@@ -270,35 +323,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			case let someElementName where someElementName.hasPrefix("feedburner"): break
 			case let someElementName where someElementName.hasPrefix("sy"): break
 			case let someElementName where someElementName.hasInfix(":"): break
-				
-            case "entry", "item":
-                if parseMode == .FEED {
-					var error : NSError?
-					
-                    if info.normalize(&error) {
-                        if let date = lastUpdated {
-                            switch date.compare(info.date) {
-                            case .OrderedAscending:
-                                break
-                            case .OrderedSame, .OrderedDescending:
-                                parserDidEndDocument(parser)
-                            }
-                        }
-						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self) {
-							if shouldParse == false {
-								abortParsing()
-							}
-						}
-                    } else {
-						delegate?.newsFeed(corruptFeed: self, withError: error!)
-						
-						abortParsing()
-                    }
-                }
-                
-                parseMode = ParseMode.ENTRY
-                target = info.sourceType.entry(info)
-                
+			
             case "link", "url":
                 target.properties["link"] = attributeDict.valueForKey("href") as? String
             default:
@@ -312,58 +337,59 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     public func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName:String!) {
 		
 		if let someElement = unknownElement {
-			delegate?.newsFeed?(unknownElementOn: self, ofName: someElement.name, withAttributes: someElement.attributeDict, andContent : currentContent)
+			
+			self.delegate?.newsFeed?(unknownElementOn: self, ofName: elementName, withAttributes: someElement.attributeDict, andContent: self.currentContent)
 			
 			unknownElement = nil
 		}
 		
-		switch info.sourceType {
-        case .NONE:
-            break
-            
-        case .ATOM, .RSS:
-            switch elementName {
-            case "entry", "item":
-                switch parseMode {
-                case .ENTRY:
-					var error : NSError?
+		switch elementName {
+			
+		case "entry", "item":
+			
+			if parseMode == .ENTRY {
+				
+				var error : NSError?
+				
+				if target.normalize (&error) {
 					
-                    if target.normalize (&error) {
-                        if let date = lastUpdated {
-							if date.isBefore(target.date) {
-								entries.append(target)
-							} else {
-								parserDidEndDocument(parser)
-							}
-                        } else {
-                            entries.append(target)
-                        }
-                    } else {
-                        delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!)
-                    }
-				
-                case .FEED: break
-                }
-            default:
-				currentContent = currentContent.trimWhitespace()
-				
-                if currentContent.isEmpty == false {
-                    target.properties[elementName] = currentContent
-                }
-            }
-        }
+					if let date = lastUpdated {
+						
+						if date.isBefore(target.date) == false { parserDidEndDocument(parser); return }
+						
+					}
+					
+					entries.append(target)
+					
+				}
+					
+				else { delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!) }
+			}
+			
+		default:
+			
+			currentContent = currentContent.trimWhitespace()
+			
+			if currentContent.isEmpty == false { target.properties[elementName] = currentContent }
+			
+		}
+		
     }
-    
+	
     public func parser(parser: NSXMLParser!, parseErrorOccurred parseError: NSError!) {
+		
 		delegate?.newsFeed(XMLParserErrorOn: self, withError: parseError)
 		
 		abortParsing()
     }
     
     public func parserDidEndDocument(parser: NSXMLParser!) {
+		
         lastUpdated = info.date
 		
-		self.delegate?.newsFeed(didFinishFeedParsing: self)
+		self.delegate?.newsFeed(didFinishFeedParsing: self, withInfo: info, withEntries: entries)
+		
+		entries = []
 		
         abortParsing()
     }
