@@ -117,9 +117,6 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     
     public var lastUpdated : NSDate?
 	
-	public var criticalError : NSError?
-	public var parseError = [NSError]()
-	
 	private var concurrencyType : STNewsFeedParserConcurrencyType!
     
     private struct Dispatch {
@@ -176,20 +173,20 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 					
 				} else {
 					let errorCode = STNewsFeedParserError.Address
-					self.criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+					let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
 					
-					self.delegate?.newsFeed(corruptFeed: self, withError: self.criticalError!)
+					self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
 				}
 				
 				})
 			
 			} else {
 				let errorCode = STNewsFeedParserError.DispatchError
-				criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+				let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 					["description" : "FOR CUSTOM DISPATCH QUEUE SET concurrentQueue FOR GIVEN INSTANCE"])
 				
-				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+				self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
 			}
         }
     }
@@ -245,10 +242,10 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                 info.sourceType = FeedType.RSS
             default:
                 let errorCode = STNewsFeedParserError.CorruptFeed
-                criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
+                let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "CORRUPT FEED [\(url.absoluteString)] [\(elementName)]"])
                 
-                delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+                delegate?.newsFeed(corruptFeed: self, withError: criticalError)
 				
 				abortParsing()
             }
@@ -284,9 +281,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
                             case .OrderedAscending:
                                 break
                             case .OrderedSame, .OrderedDescending:
-                                self.delegate?.newsFeed(didFinishFeedParsing: self)
-                                
-                                abortParsing()
+                                parserDidEndDocument(parser)
                             }
                         }
 						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self) {
@@ -295,9 +290,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 							}
 						}
                     } else {
-						criticalError = error!
-						
-                        delegate?.newsFeed(corruptFeed: self, withError: criticalError!)
+						delegate?.newsFeed(corruptFeed: self, withError: error!)
 						
 						abortParsing()
                     }
@@ -340,19 +333,16 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 							if date.isBefore(target.date) {
 								entries.append(target)
 							} else {
-								abortParsing()
 								parserDidEndDocument(parser)
 							}
                         } else {
                             entries.append(target)
                         }
                     } else {
-                        parseError.append(error!)
-						
-						delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!)
+                        delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!)
                     }
-                case .FEED:
-                    break
+				
+                case .FEED: break
                 }
             default:
 				currentContent = currentContent.trimWhitespace()
