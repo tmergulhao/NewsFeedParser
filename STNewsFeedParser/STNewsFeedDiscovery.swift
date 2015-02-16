@@ -130,13 +130,12 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
 			pageURLString = pageURLString.removeFinalSlash()
 		}
         
-        var html = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error)
-        
         if let givenError = error {
             
             delegate?.feedDiscovery(self, corruptHTML: givenError)
             
-		} else if let head = (html! =~ regexHead).items.first {
+		} else if let	html = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error) as? String,
+						head = (html =~ regexHead).items.first {
 			
 			if let givenTitle = (head =~ regexTitle).items.last {
 				
