@@ -238,7 +238,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 	}
 	private var unknownElement : UnkownElement?
 	
-    func parser(parser: NSXMLParser!, didStartElement elementName: String!, namespaceURI: String!, qualifiedName qName: String!, attributes attributeDict: NSDictionary!) {
+	public func parser(parser: NSXMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [NSObject : AnyObject]) {
         
         currentContent = ""
         
@@ -318,16 +318,20 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			case let someElementName where someElementName.hasInfix(":"): break
 			
             case "link", "url":
-                target.properties["link"] = attributeDict.valueForKey("href") as? String
+                target.properties["link"] = attributeDict["href"] as? String
             default:
 				unknownElement = UnkownElement(name: elementName, attributeDict: attributeDict)
             }
         }
     }
 	
-	public func parser(parser: NSXMLParser!, foundCharacters string: String!) { currentContent += string }
-    
-    public func parser(parser: NSXMLParser!, didEndElement elementName: String!, namespaceURI: String!, qualifiedName qName:String!) {
+	public func parser(parser: NSXMLParser, foundCharacters string: String?) {
+		if let someCharacters = string {
+			currentContent += someCharacters
+		}
+	}
+	
+    public func parser(parser : NSXMLParser, didEndElement elementName : String, namespaceURI : String?, qualifiedName qName : String?) {
 		
 		if let someElement = unknownElement {
 			
@@ -369,14 +373,14 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 		
     }
 	
-    public func parser(parser: NSXMLParser!, parseErrorOccurred parseError: NSError!) {
+    public func parser(parser: NSXMLParser, parseErrorOccurred parseError: NSError) {
 		
 		delegate?.newsFeed(XMLParserErrorOn: self, withError: parseError)
 		
 		abortParsing()
     }
     
-    public func parserDidEndDocument(parser: NSXMLParser!) {
+    public func parserDidEndDocument(parser: NSXMLParser) {
 		
         lastUpdated = info.date
 		
