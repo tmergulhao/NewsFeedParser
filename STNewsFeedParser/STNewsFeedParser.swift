@@ -288,15 +288,15 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 						
 					} else {
 						
-						if let date = lastUpdated {
+						if let date = lastUpdated where date.isBefore(info.date) == false {
 							
-							if date.isBefore(info.date) == false { parserDidEndDocument(parser); return }
+							parserDidEndDocument(parser)
 							
 						}
 						
-						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self, withInfo: info) {
+						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self, withInfo: info) where shouldParse == false {
 							
-							if shouldParse == false { abortParsing(); return }
+							abortParsing()
 							
 						}
 					}
@@ -357,17 +357,22 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				
 				if target.normalize (&error) {
 					
-					if let date = lastUpdated {
+					if let date = lastUpdated where date.isBefore(target.date) == false {
 						
-						if date.isBefore(target.date) == false { parserDidEndDocument(parser); return }
+						parserDidEndDocument(parser)
+						
+					} else {
+						
+						entries.append(target)
 						
 					}
-					
-					entries.append(target)
-					
 				}
 					
-				else { delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!) }
+				else {
+					
+					delegate?.newsFeed?(corruptEntryOn: self, entry: target, withError: error!)
+					
+				}
 			}
 			
 		default:
