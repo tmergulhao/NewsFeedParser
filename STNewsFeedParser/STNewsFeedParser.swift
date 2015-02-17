@@ -50,7 +50,7 @@ internal extension String {
 	
 	//	How do you use String.substringWithRange? (or, how do Ranges work in Swift?) on StackOverflow
 	//	http://stackoverflow.com/questions/24044851/how-do-you-use-string-substringwithrange-or-how-do-ranges-work-in-swift
-	
+	/*
 	func hasInfix (input : String) -> Bool {
 		let length = self.length
 		let inputLength = input.length
@@ -71,6 +71,10 @@ internal extension String {
 		}
 		
 		return false
+	}
+	*/
+	func hasInfix (input : Character) -> Bool {
+		return self.rangeOfString("\(input)", options: NSStringCompareOptions.BackwardsSearch, range: nil, locale: nil) != nil
 	}
 }
 
