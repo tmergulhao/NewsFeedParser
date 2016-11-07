@@ -20,8 +20,8 @@ internal class STTestEntriesForToday : STNewsFeedParserTests, STNewsFeedParserDe
 	
 	func testEntriesForToday () {
 		for feed in feeds {
-			let calendar = NSCalendar.currentCalendar()
-			let yesterday = calendar.dateByAddingUnit(.CalendarUnitDay, value: -2, toDate: NSDate(), options: nil)
+			let calendar = Calendar.current
+			let yesterday = calendar.dateByAddingUnit(.CalendarUnitDay, value: -2, toDate: Date(), options: nil)
 			
 			feed.lastUpdated = yesterday
 			
@@ -29,7 +29,7 @@ internal class STTestEntriesForToday : STNewsFeedParserTests, STNewsFeedParserDe
 			feed.parse()
 		}
 		
-		self.waitForExpectationsWithTimeout(10 as NSTimeInterval, handler: {
+		self.waitForExpectations(timeout: 10 as TimeInterval, handler: {
 			error in
 			XCTAssertNil(error, "Error")
 		})

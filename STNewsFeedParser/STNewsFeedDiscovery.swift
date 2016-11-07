@@ -23,10 +23,8 @@ import Foundation
 internal extension String {
 	func removeFinalSlash () -> String {
 		if self.hasSuffix("/") {
-			return self.substringWithRange(
-				Range<String.Index>(
-					start: self.startIndex,
-					end: advance(self.endIndex, -1)))
+			return self.substring(
+				with: (self.startIndex ..< advance(self.endIndex, -1)))
 		}
 		return self
 	}
@@ -40,16 +38,16 @@ internal extension String {
 //	http://www.raywenderlich.com/14172/how-to-parse-html-on-ios
 
 public enum STFeedDiscoveryError : Int {
-    case CorruptHTML
+    case corruptHTML
     var domain : String {
         return "stae.rs.STNewsFeedDiscovery"
     }
 }
 
-public class FeedAddress {
+open class FeedAddress {
 	var type : FeedType
 	var title : String?
-	var url : NSURL!
+	var url : URL!
 	
 	init? (ofElement element : String, onPageOfTitle pageTitle : String?) {
 		if let titleAttr = (element =~ regexTitleAttr).items.last {
@@ -58,24 +56,24 @@ public class FeedAddress {
 			title = pageTitle?.trimWhitespace()
 		}
 		
-		url = NSURL()
-		type = FeedType.NONE
+		url = URL()
+		type = FeedType.none
 		
 		if let typeAttr = (element =~ regexTypeAttr).items.last {
 			switch typeAttr {
 			case "rss":
-				type = .RSS
+				type = .rss
 			case "atom":
-				type = .ATOM
+				type = .atom
 			default:
-				type = .NONE
+				type = .none
 			}
 		} else {
 			return nil
 		}
 		
 		if let addressAttr = (element =~ regexAddressAttr).items.last {
-			if let someURL = NSURL(string: addressAttr) {
+			if let someURL = URL(string: addressAttr) {
 				url = someURL
 			} else {
 				return nil
@@ -85,11 +83,11 @@ public class FeedAddress {
 		}
 	}
 	
-	private var regexTitle = "<title>(.*)</title>"
+	fileprivate var regexTitle = "<title>(.*)</title>"
 	
-	private var regexTypeAttr = "type=\"application/(rss|atom)?\\+xml\""
-	private var regexTitleAttr = "title=\"([\\w|\\s|!|—|-]*)\""
-	private var regexAddressAttr = "href=\"(\\S*)\""
+	fileprivate var regexTypeAttr = "type=\"application/(rss|atom)?\\+xml\""
+	fileprivate var regexTitleAttr = "title=\"([\\w|\\s|!|—|-]*)\""
+	fileprivate var regexAddressAttr = "href=\"(\\S*)\""
 }
 
 // MARK: - STNewsFeedDelegate
@@ -99,28 +97,28 @@ public class FeedAddress {
 	func feedDiscovery(didFinishPage page : STNewsFeedDiscovery, withAddresses addresses : Array<FeedAddress>)
     // send when the feed is parsed and all it's entries are validated
 	
-    func feedDiscovery(page : STNewsFeedDiscovery, corruptHTML error:NSError)
+    func feedDiscovery(_ page : STNewsFeedDiscovery, corruptHTML error:NSError)
 }
 
 // MARK: - STNewsFeedDiscovery
 
-public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
+open class STNewsFeedDiscovery: NSObject, XMLParserDelegate {
     // MARK: - Public
-    public weak var delegate : STNewsFeedDiscoveryDelegate?
+    open weak var delegate : STNewsFeedDiscoveryDelegate?
     
-    public var addresses : Array<FeedAddress> = []
+    open var addresses : Array<FeedAddress> = []
     
-    public var title : String!
-    public var imageURL : NSURL?
-    public var url : NSURL!
+    open var title : String!
+    open var imageURL : URL?
+    open var url : URL!
     
-    public init (pageFromUrl url : NSURL) {
+    public init (pageFromUrl url : URL) {
         super.init()
         
         self.url = url
     }
     
-    public func discover () {
+    open func discover () {
 		
 		var error : NSError?
 		
@@ -134,8 +132,8 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
             
             delegate?.feedDiscovery(self, corruptHTML: givenError)
             
-		} else if let	html = NSString(contentsOfURL: url, encoding: NSUTF8StringEncoding, error: &error) as? String,
-						head = (html =~ regexHead).items.first {
+		} else if let	html = NSString(contentsOfURL: url, encoding: String.Encoding.utf8, error: &error) as? String,
+						let head = (html =~ regexHead).items.first {
 			
 			if let givenTitle = (head =~ regexTitle).items.last {
 				
@@ -143,15 +141,15 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
 				
 				if let imageStringURL = (head =~ regexImage).items.last {
 					if imageStringURL.hasPrefix("/") {
-						imageURL = NSURL(string: pageURLString + imageStringURL)
+						imageURL = URL(string: pageURLString + imageStringURL)
 					} else {
-						imageURL = NSURL(string: imageStringURL)
+						imageURL = URL(string: imageStringURL)
 					}
 				} else if let imageStringURL = (head =~ regexFavicon).items.last {
 					if imageStringURL.hasPrefix("/") {
-						imageURL = NSURL(string: pageURLString + imageStringURL)
+						imageURL = URL(string: pageURLString + imageStringURL)
 					} else {
-						imageURL = NSURL(string: imageStringURL)
+						imageURL = URL(string: imageStringURL)
 					}
 				}
 				
@@ -169,7 +167,7 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
                 
             } else {
                 
-                let errorCode = STFeedDiscoveryError.CorruptHTML
+                let errorCode = STFeedDiscoveryError.corruptHTML
                 let parseError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
                     ["description" : "CORRUPT HTML [\(url.absoluteString)]"])
                 
@@ -182,18 +180,18 @@ public class STNewsFeedDiscovery: NSObject, NSXMLParserDelegate {
     /**
     Detect title of the page.
     */
-    private var regexTitle = "<title>(.*)</title>"
-	private var regexHead = "<head>(\\s|\\S)*</head>"
+    fileprivate var regexTitle = "<title>(.*)</title>"
+	fileprivate var regexHead = "<head>(\\s|\\S)*</head>"
     /**
     Regular expression to scan from a HTML feed type, optional title and link on array. Examples:
     
     *  ["atom", "Title", "/feeds/main"]
     *  ["rss", "Title", "http://rss.example/feeds/main"]
     */
-    private var regexLink = "<link" + "\\s*" + "rel=\"alternate\"" + "\\s*" + "type=\"application/(?:rss|atom)?\\+xml\"" + "\\s*" + "(?:title=\"[\\w|\\s|!|—|-|/\\&-|;]*\")?" + "\\s*" + "href=\"(?:\\S*)\""// + "[^>]*" + "/?>"
+    fileprivate var regexLink = "<link" + "\\s*" + "rel=\"alternate\"" + "\\s*" + "type=\"application/(?:rss|atom)?\\+xml\"" + "\\s*" + "(?:title=\"[\\w|\\s|!|—|-|/\\&-|;]*\")?" + "\\s*" + "href=\"(?:\\S*)\""// + "[^>]*" + "/?>"
     /**
     Detect iOS image from HTML tag
     */
-    private var regexImage = "<link\\s*rel=\"apple-touch-icon-?.*?\"\\s*href=\"(.*)\"\\s*/?>"
-	private var regexFavicon = "<link\\s*rel=\"(?:.*)?icon\"\\s*\\s*href=\"(.*)\"\\s*/?>"
+    fileprivate var regexImage = "<link\\s*rel=\"apple-touch-icon-?.*?\"\\s*href=\"(.*)\"\\s*/?>"
+	fileprivate var regexFavicon = "<link\\s*rel=\"(?:.*)?icon\"\\s*\\s*href=\"(.*)\"\\s*/?>"
 }

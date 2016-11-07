@@ -38,15 +38,15 @@ Enumeration of types of XML feeds supported
 - PODCAST: Documentation on https://www.apple.com/itunes/podcasts/specs.html
 */
 public enum FeedType {
-    case NONE, RSS, ATOM
+    case none, rss, atom
     /// Verbose description of types
     var verbose : String {
         switch self {
-        case .NONE:
+        case .none:
             return ""
-        case .RSS:
+        case .rss:
             return "RSS"
-        case .ATOM:
+        case .atom:
             return "Atom"
         }
     }
@@ -57,13 +57,13 @@ public enum FeedType {
     
     :returns: entity of given entry type
     */
-    func entry (info : STNewsFeedEntry) -> STNewsFeedEntry? {
+    func entry (_ info : STNewsFeedEntry) -> STNewsFeedEntry? {
         switch info.sourceType {
-        case .NONE:
+        case .none:
             return nil
-        case .RSS:
+        case .rss:
             return STRSSEntry(info: info)
-        case .ATOM:
+        case .atom:
             return STAtomEntry(info: info)
         }
     }
@@ -73,27 +73,27 @@ public enum FeedType {
 /**
 RSS entry type with according methods and properties
 */
-public class STRSSEntry : STNewsFeedEntry {}
+open class STRSSEntry : STNewsFeedEntry {}
 
 // MARK: - STAtomEntry
 /**
 Atom entry type with according methods and properties
 */
-public class STAtomEntry : STNewsFeedEntry {}
+open class STAtomEntry : STNewsFeedEntry {}
 
 // MARK: - STNewsFeedEntry
 /**
 Generic non intanciable entry type with according methods and properties
 */
-public class STNewsFeedEntry: NSObject {
+open class STNewsFeedEntry: NSObject {
     
     // MARK: - Lazy contextual mandatory variables
-    public lazy var title : String! = self.properties.findAny("title", "subtitle", "description", "summary", "url", "link", "address")
-    public lazy var link : String! = self.properties.findAny("link", "url", "address")
-    public lazy var date : NSDate! = self.parseDate()
+    open lazy var title : String! = self.properties.findAny("title", "subtitle", "description", "summary", "url", "link", "address")
+    open lazy var link : String! = self.properties.findAny("link", "url", "address")
+    open lazy var date : Date! = self.parseDate()
     // [[UIApplication sharedApplication] openURL:[NSURL URLWithString: @"THE RSS URL"]];
 	
-	internal func normalize (error : NSErrorPointer) -> Bool {
+	internal func normalize (_ error : NSErrorPointer) -> Bool {
 		
 		var infoStr : String?
 		
@@ -124,9 +124,9 @@ public class STNewsFeedEntry: NSObject {
 				infoStr! = "CORRUPT ENTRY ON " + infoStr!
 			}
 			
-			let errorCode = STNewsFeedParserError.CorruptFeed
+			let errorCode = STNewsFeedParserError.corruptFeed
 			
-			error.memory = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:["description" : infoStr!])
+			error.pointee = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:["description" : infoStr!])
 			
 			return false
 		}
@@ -135,13 +135,13 @@ public class STNewsFeedEntry: NSObject {
 	}
 	
     // MARK: - Lazy contextual optional variables
-    public lazy var summary : String? = self.properties.findAny("subtitle", "description", "summary")
-    public lazy var subtitle : String? = self.summary
-    public lazy var domain : String? = (self.link + "/" =~ "^https?://(?:www\\.)?([A-Za-z0-9-]+\\.[A-Za-z0-9]+)").items.last
+    open lazy var summary : String? = self.properties.findAny("subtitle", "description", "summary")
+    open lazy var subtitle : String? = self.summary
+    open lazy var domain : String? = (self.link + "/" =~ "^https?://(?:www\\.)?([A-Za-z0-9-]+\\.[A-Za-z0-9]+)").items.last
     
     // MARK: - Internal
-    public var sourceType : FeedType = FeedType.NONE
-    public weak var info : STNewsFeedEntry!
+    open var sourceType : FeedType = FeedType.none
+    open weak var info : STNewsFeedEntry!
     internal var properties : [String : String] = Dictionary<String, String>()
 	
     /**
@@ -150,7 +150,7 @@ public class STNewsFeedEntry: NSObject {
     
     :returns: optional of date
     */
-    private func parseDate() -> NSDate? {
+    fileprivate func parseDate() -> Date? {
         
         if let dateString = properties.findAny(
             // RSS standart tags
@@ -160,22 +160,22 @@ public class STNewsFeedEntry: NSObject {
             "updated", "published"
             ) {
 				
-				let dateFormat = NSDateFormatter()
+				let dateFormat = DateFormatter()
 				
-				dateFormat.locale = NSLocale(localeIdentifier: "en_US_POSIX")
-				dateFormat.timeZone = NSTimeZone(forSecondsFromGMT: 0)
+				dateFormat.locale = Locale(identifier: "en_US_POSIX")
+				dateFormat.timeZone = TimeZone(secondsFromGMT: 0)
                 
                 // RFC822 date format
                 // RSS Standart
                 dateFormat.dateFormat = "EEE, dd MMM yyyy HH:mm:ss z"
                 
-                if let date = dateFormat.dateFromString(dateString) {
+                if let date = dateFormat.date(from: dateString) {
                     return date
                 }
 				
 				dateFormat.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
 				
-				if let date = dateFormat.dateFromString(dateString) {
+				if let date = dateFormat.date(from: dateString) {
 					return date
 				}
 				
@@ -190,18 +190,15 @@ public class STNewsFeedEntry: NSObject {
 				
 				dateFormat.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
 				
-				if let date = dateFormat.dateFromString(dateString) {
+				if let date = dateFormat.date(from: dateString) {
 					return date
 				}
 				
-                var trimDateString = dateString.substringWithRange(
-                    Range<String.Index>(
-                        start: advance(dateString.startIndex, 0),
-                        end: advance(dateString.startIndex/*endIndex*/, 19)
-                    )
+                var trimDateString = dateString.substring(
+                    with: (advance(dateString.startIndex, 0) ..< advance(dateString.startIndex/*endIndex*/, 19))
                 )
                 
-                if let date = dateFormat.dateFromString(trimDateString) {
+                if let date = dateFormat.date(from: trimDateString) {
                     return date
                 }
         }

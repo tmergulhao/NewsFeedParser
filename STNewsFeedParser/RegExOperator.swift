@@ -22,23 +22,23 @@ import Foundation
 
 // MARK: - Regular Expression Extension
 
-infix operator =~ {}
+infix operator =~
 
 func =~ (value : String, pattern : String) -> RegexMatchResult {
     let nsstr = value as NSString // we use this to access the NSString methods like .length and .substringWithRange(NSRange)
     
     var err : NSError?
-    let options = NSRegularExpressionOptions(0)
+    let options = NSRegularExpression.Options(0)
     let re = NSRegularExpression(pattern: pattern, options: options, error: &err)
     if let e = err {
         return RegexMatchResult(items: [])
     }
     
     let all = NSRange(location: 0, length: nsstr.length)
-    let moptions = NSMatchingOptions(0)
+    let moptions = NSRegularExpression.MatchingOptions(0)
     var matches : Array<String> = []
     re!.enumerateMatchesInString(value, options: moptions, range: all) {
-        (result : NSTextCheckingResult!, flags : NSMatchingFlags, ptr : UnsafeMutablePointer<ObjCBool>) in
+        (result : NSTextCheckingResult!, flags : NSRegularExpression.MatchingFlags, ptr : UnsafeMutablePointer<ObjCBool>) in
         
         for rangeIndex in 0..<result.numberOfRanges {
             let range = result.rangeAtIndex(rangeIndex)
@@ -53,19 +53,19 @@ func =~ (value : String, pattern : String) -> RegexMatchResult {
     return RegexMatchResult(items: matches)
 }
 
-struct RegexMatchCaptureGenerator : GeneratorType {
+struct RegexMatchCaptureGenerator : IteratorProtocol {
     mutating func next() -> String? {
         if items.isEmpty { return nil }
         let ret = items[0]
         items = items[1..<items.count]
         return ret
     }
-    var items: Slice<String>
+    var items: ArraySlice<String>
 }
 
-struct RegexMatchResult : SequenceType, BooleanType {
+struct RegexMatchResult : Sequence {
     var items: Array<String>
-    func generate() -> RegexMatchCaptureGenerator {
+    func makeIterator() -> RegexMatchCaptureGenerator {
         return RegexMatchCaptureGenerator(items: items[0..<items.count])
     }
     var boolValue: Bool {

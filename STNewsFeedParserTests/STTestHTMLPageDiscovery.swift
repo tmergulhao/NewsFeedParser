@@ -35,7 +35,7 @@ internal class STTestHTMLPageDiscovery: XCTestCase, STNewsFeedDiscoveryDelegate 
 		super.setUp()
 		
 		for address in sampleAddresses {
-			if let someURL = NSURL(string: address) {
+			if let someURL = URL(string: address) {
 				pages.append(STNewsFeedDiscovery(pageFromUrl: someURL))
 				
 				// expectations[address] = expectationWithDescription("Parsed \(address)")
@@ -56,7 +56,7 @@ internal class STTestHTMLPageDiscovery: XCTestCase, STNewsFeedDiscoveryDelegate 
 	
     // MARK: - STNewsFeedDiscovery
     
-    func feedDiscovery(page: STNewsFeedDiscovery, corruptHTML error: NSError) {
+    func feedDiscovery(_ page: STNewsFeedDiscovery, corruptHTML error: NSError) {
 		println(error.description)
 	}
 	func feedDiscovery(didFinishPage page: STNewsFeedDiscovery, withAddresses addresses: Array<FeedAddress>) {

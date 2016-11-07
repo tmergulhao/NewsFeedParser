@@ -28,12 +28,12 @@ import Foundation
 
 // MARK: - Extensions
 
-private extension NSDate {
-	func isBefore (someDate : NSDate) -> Bool {
+private extension Date {
+	func isBefore (_ someDate : Date) -> Bool {
 		switch self.compare(someDate) {
-		case .OrderedAscending:
+		case .orderedAscending:
 			return true
-		case .OrderedDescending, .OrderedSame:
+		case .orderedDescending, .orderedSame:
 			return false
 		}
 	}
@@ -41,10 +41,10 @@ private extension NSDate {
 
 internal extension String {
 	func trimWhitespace () -> String {
-		return self.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet())
+		return self.trimmingCharacters(in: CharacterSet.whitespaces)
 	}
 	var length : Int {
-		var nsstring = NSString(string: self)
+		let nsstring = NSString(string: self)
 		return nsstring.length
 	}
 	
@@ -73,22 +73,22 @@ internal extension String {
 		return false
 	}
 	*/
-	func hasInfix (input : Character) -> Bool {
-		return self.rangeOfString("\(input)", options: NSStringCompareOptions.BackwardsSearch, range: nil, locale: nil) != nil
+	func hasInfix (_ input : Character) -> Bool {
+		return self.range(of: "\(input)", options: NSString.CompareOptions.backwards, range: nil, locale: nil) != nil
 	}
 }
 
 // MARK: - STNewsFeedParserError
 
 public enum STNewsFeedParserError : Int {
-    case Element, Address, CorruptFeed, DispatchError
+    case element, address, corruptFeed, dispatchError
     var domain : String {
         return "stae.rs.STNewsFeedParser"
     }
 }
 
 public enum STNewsFeedParserConcurrencyType : Int {
-	case MainQueue, PrivateQueue, CustomQueue
+	case mainQueue, privateQueue, customQueue
 }
 
 // MARK: - STNewsFeedDelegate
@@ -96,7 +96,7 @@ public enum STNewsFeedParserConcurrencyType : Int {
 @objc public protocol STNewsFeedParserDelegate : NSObjectProtocol {
     //	Feed lifecicle methods
 	//	sent after feed header was read and body is about to be parsed
-	optional func newsFeed(shouldBeginFeedParsing feed : STNewsFeedParser,  withInfo info : STNewsFeedEntry) -> Bool // DEFAULT TRUE
+	@objc optional func newsFeed(shouldBeginFeedParsing feed : STNewsFeedParser,  withInfo info : STNewsFeedEntry) -> Bool // DEFAULT TRUE
 			 func newsFeed(didFinishFeedParsing	  feed : STNewsFeedParser,	withInfo info : STNewsFeedEntry, withEntries entries : Array<STNewsFeedEntry>)
     // send when the feed is parsed and all it's entries are validated
 	
@@ -107,49 +107,49 @@ public enum STNewsFeedParserConcurrencyType : Int {
 	
 	//	Inconsistency on parsing methods
 	//	This call will not yield abortion of parsing
-	optional func newsFeed(corruptEntryOn   feed : STNewsFeedParser, entry : STNewsFeedEntry,   withError error:NSError)
-	optional func newsFeed(unknownElementOn feed : STNewsFeedParser, ofName elementName:String, withAttributes attributeDict:NSDictionary, andContent content : String)
+	@objc optional func newsFeed(corruptEntryOn   feed : STNewsFeedParser, entry : STNewsFeedEntry,   withError error:NSError)
+	@objc optional func newsFeed(unknownElementOn feed : STNewsFeedParser, ofName elementName:String, withAttributes attributeDict:NSDictionary, andContent content : String)
 }
 
 // MARK: - STNewsFeedParser
 
-public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
+open class STNewsFeedParser: NSObject, XMLParserDelegate {
 	
     // MARK: - Public
 	
-    public weak var delegate : STNewsFeedParserDelegate?
+    open weak var delegate : STNewsFeedParserDelegate?
     
-    private var info : STNewsFeedEntry!
-    private var entries : Array<STNewsFeedEntry> = []
+    fileprivate var info : STNewsFeedEntry!
+    fileprivate var entries : Array<STNewsFeedEntry> = []
     
-    public var lastUpdated : NSDate?
+    open var lastUpdated : Date?
 	
-	private var concurrencyType : STNewsFeedParserConcurrencyType!
+	fileprivate var concurrencyType : STNewsFeedParserConcurrencyType!
     
-    private struct Dispatch {
-        private static var concurrentQueue : dispatch_queue_t!
+    fileprivate struct Dispatch {
+        fileprivate static var concurrentQueue : DispatchQueue!
     }
 	
-	public lazy var concurrentQueue : dispatch_queue_t? = {
+	open lazy var concurrentQueue : DispatchQueue? = {
 		switch self.concurrencyType! {
 		
-		case .CustomQueue: return nil
+		case .customQueue: return nil
 		
-		case .MainQueue: return dispatch_get_main_queue()
+		case .mainQueue: return DispatchQueue.main
 		
-		case .PrivateQueue:
+		case .privateQueue:
 			
 			if Dispatch.concurrentQueue == nil {
-				Dispatch.concurrentQueue = dispatch_queue_create(
-												"stae.rs.STNewsFeedParser.concurrentQueue",
-												DISPATCH_QUEUE_CONCURRENT)
+				Dispatch.concurrentQueue = DispatchQueue(
+												label: "stae.rs.STNewsFeedParser.concurrentQueue",
+												attributes: DispatchQueue.Attributes.concurrent)
 			}
 			
 			return Dispatch.concurrentQueue
 		}
 	}()
     
-	public init (feedFromUrl url : NSURL, concurrencyType : STNewsFeedParserConcurrencyType) {
+	public init (feedFromUrl url : URL, concurrencyType : STNewsFeedParserConcurrencyType) {
         super.init()
         
         self.url = url
@@ -163,18 +163,18 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         target = info
     }
 	
-    public func parse () {
+    open func parse () {
 		if isParsing == false {
 			
-            info.sourceType = FeedType.NONE
+            info.sourceType = FeedType.none
             
-            parseMode = .FEED
+            parseMode = .feed
 			
 			if let workingQueue = concurrentQueue {
 				
-				dispatch_async (workingQueue, {
+				workingQueue.async (execute: {
 				
-				if let parser = NSXMLParser(contentsOfURL: self.url) {
+				if let parser = XMLParser(contentsOf: self.url) {
 					
 					self.parser = parser
 					
@@ -183,10 +183,10 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 					
 				} else {
 					
-					let errorCode = STNewsFeedParserError.Address
+					let errorCode = STNewsFeedParserError.address
 					
 					let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
-						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString! + "]"])
+						["description" : "INVALID ADDRESS does not trigger NSXMLParser: [" + self.url.absoluteString + "]"])
 					
 					self.delegate?.newsFeed(corruptFeed: self, withError: criticalError)
 					
@@ -196,7 +196,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			
 			} else {
 				
-				let errorCode = STNewsFeedParserError.DispatchError
+				let errorCode = STNewsFeedParserError.dispatchError
 				
 				let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 					["description" : "FOR CUSTOM DISPATCH QUEUE SET concurrentQueue FOR GIVEN INSTANCE"])
@@ -207,7 +207,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
         }
     }
 	
-    public func abortParsing () {
+    open func abortParsing () {
         parser?.abortParsing()
         parser?.delegate = nil
         parser = nil
@@ -215,52 +215,52 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
     
     // MARK: - NSXMLParserDelegate
     
-    private enum ParseMode {
-        case FEED, ENTRY
+    fileprivate enum ParseMode {
+        case feed, entry
     }
-	private var lastParseMode : ParseMode = ParseMode.FEED
-	private var parseMode : ParseMode = ParseMode.FEED
+	fileprivate var lastParseMode : ParseMode = ParseMode.feed
+	fileprivate var parseMode : ParseMode = ParseMode.feed
 	
-	private var target : STNewsFeedEntry!
+	fileprivate var target : STNewsFeedEntry!
 	
-    private var url : NSURL!
-	public var address : String {
+    fileprivate var url : URL!
+	open var address : String {
 		get {
-			return url.absoluteString!
+			return url.absoluteString
 		}
 	}
 	
-    private weak var parser : NSXMLParser!
-	public var isParsing : Bool {
+    fileprivate weak var parser : XMLParser!
+	open var isParsing : Bool {
 		get {
 			return parser != nil
 		}
     }
     
-    private var currentContent : String = ""
+    fileprivate var currentContent : String = ""
 	
-	private struct UnkownElement {
+	fileprivate struct UnkownElement {
 		var name : String
 		var attributeDict : NSDictionary
 	}
-	private var unknownElement : UnkownElement?
+	fileprivate var unknownElement : UnkownElement?
 	
-	public func parser(parser: NSXMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [NSObject : AnyObject]) {
+	open func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [AnyHashable: Any]) {
         
         currentContent = ""
         
         switch info.sourceType {
-        case .NONE:
+        case .none:
 			
             switch elementName {
 				
-            case "feed": info.sourceType = FeedType.ATOM
+            case "feed": info.sourceType = FeedType.atom
 				
-            case "channel", "rss": info.sourceType = FeedType.RSS
+            case "channel", "rss": info.sourceType = FeedType.rss
 				
 			default:
 				
-				let errorCode = STNewsFeedParserError.CorruptFeed
+				let errorCode = STNewsFeedParserError.corruptFeed
 				let criticalError = NSError(domain: errorCode.domain, code: errorCode.rawValue, userInfo:
 					["description" : "CORRUPT FEED [\(self.address)] [\(elementName)]"])
 				
@@ -270,13 +270,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 				
             }
 			
-        case .ATOM, .RSS:
+        case .atom, .rss:
 			
             switch elementName {
 				
 			case "entry", "item":
 				
-				if parseMode == .FEED {
+				if parseMode == .feed {
 					
 					var error : NSError?
 					
@@ -288,13 +288,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 						
 					} else {
 						
-						if let date = lastUpdated where date.isBefore(info.date) == false {
+						if let date = lastUpdated , date.isBefore(info.date as Date) == false {
 							
 							parserDidEndDocument(parser)
 							
 						}
 						
-						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self, withInfo: info) where shouldParse == false {
+						if let shouldParse = delegate?.newsFeed?(shouldBeginFeedParsing: self, withInfo: info) , shouldParse == false {
 							
 							abortParsing()
 							
@@ -302,7 +302,7 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 					}
 				}
 				
-				parseMode = ParseMode.ENTRY
+				parseMode = ParseMode.entry
 				
 				target = info.sourceType.entry(info)
 			
@@ -327,18 +327,18 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
             case "link", "url":
                 target.properties["link"] = attributeDict["href"] as? String
             default:
-				unknownElement = UnkownElement(name: elementName, attributeDict: attributeDict)
+				unknownElement = UnkownElement(name: elementName, attributeDict: attributeDict as NSDictionary)
             }
         }
     }
 	
-	public func parser(parser: NSXMLParser, foundCharacters string: String?) {
+	open func parser(_ parser: XMLParser, foundCharacters string: String?) {
 		if let someCharacters = string {
 			currentContent += someCharacters
 		}
 	}
 	
-    public func parser(parser : NSXMLParser, didEndElement elementName : String, namespaceURI : String?, qualifiedName qName : String?) {
+    open func parser(_ parser : XMLParser, didEndElement elementName : String, namespaceURI : String?, qualifiedName qName : String?) {
 		
 		if let someElement = unknownElement {
 			
@@ -351,13 +351,13 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 			
 		case "entry", "item":
 			
-			if parseMode == .ENTRY {
+			if parseMode == .entry {
 				
 				var error : NSError?
 				
 				if target.normalize (&error) {
 					
-					if let date = lastUpdated where date.isBefore(target.date) == false {
+					if let date = lastUpdated , date.isBefore(target.date as Date) == false {
 						
 						parserDidEndDocument(parser)
 						
@@ -385,16 +385,16 @@ public class STNewsFeedParser: NSObject, NSXMLParserDelegate {
 		
     }
 	
-    public func parser(parser: NSXMLParser, parseErrorOccurred parseError: NSError) {
+    open func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
 		
-		delegate?.newsFeed(XMLParserErrorOn: self, withError: parseError)
+		delegate?.newsFeed(XMLParserErrorOn: self, withError: parseError as NSError)
 		
 		abortParsing()
     }
     
-    public func parserDidEndDocument(parser: NSXMLParser) {
+    open func parserDidEndDocument(_ parser: XMLParser) {
 		
-        lastUpdated = info.date
+        lastUpdated = info.date as Date?
 		
 		self.delegate?.newsFeed(didFinishFeedParsing: self, withInfo: info, withEntries: entries)
 		

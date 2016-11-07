@@ -28,7 +28,7 @@ internal extension Dictionary {
     
     :returns: Return first found value or nil
     */
-    func findAny (keys : Key...) -> Value? {
+    func findAny (_ keys : Key...) -> Value? {
         for key in keys {
             if let result = self[key] {
                 return result

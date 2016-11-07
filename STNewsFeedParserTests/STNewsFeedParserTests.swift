@@ -38,12 +38,12 @@ internal class STNewsFeedParserTests : XCTestCase {
 		super.setUp()
 		
 		for address in sampleAddresses {
-			if let someURL = NSURL(string: address) {
+			if let someURL = URL(string: address) {
 				feeds.append(STNewsFeedParser(
 					    feedFromUrl: someURL,
-					concurrencyType: STNewsFeedParserConcurrencyType.PrivateQueue))
+					concurrencyType: STNewsFeedParserConcurrencyType.privateQueue))
 				
-				expectations[address] = expectationWithDescription("Parsed \(address)")
+				expectations[address] = expectation(description: "Parsed \(address)")
 			} else {
 				XCTAssert(false, "Unable to instance NSURL : \(address)")
 			}

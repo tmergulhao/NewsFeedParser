@@ -24,7 +24,7 @@ internal class STTestUnknownFeedElements: STNewsFeedParserTests, STNewsFeedParse
 			feed.parse()
 		}
 		
-		self.waitForExpectationsWithTimeout(10 as NSTimeInterval, handler: {
+		self.waitForExpectations(timeout: 10 as TimeInterval, handler: {
 			error in
 			XCTAssertNil(error, "Error")
 		})
